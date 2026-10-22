@@ -68,8 +68,11 @@
     }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; }
+  /* 페이지 자체는 움직이지 않게 고정한다. 끌어내리면 Bluefy가 새로고침해서 연결이 끊기기 때문 */
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
   body {
+    position: fixed;
+    inset: 0;
     margin: 0;
     display: flex;
     flex-direction: column;
@@ -221,7 +224,11 @@
     padding: 8px 20px max(24px, env(safe-area-inset-bottom));
     transform: translateY(100%); transition: transform .25s;
     max-width: 520px; margin: 0 auto;
-    max-height: 85vh; overflow-y: auto;
+    max-height: 85vh;
+    max-height: 85dvh; /* 아이폰 주소창을 뺀 실제 보이는 높이 기준 */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
   body.sheet-open .sheet-bg { opacity: 1; pointer-events: auto; }
   body.sheet-open .sheet { transform: none; }
@@ -529,7 +536,7 @@
   const AUTH_NAMES = { 0: '잠금 해제', 1: '잠김', 2: '공유 코드 불일치' };
 
   const $ = (id) => document.getElementById(id);
-  const APP_VERSION = '2026-10-23b';
+  const APP_VERSION = '2026-10-23c';
 
   // Bluefy는 권한 없는 서비스 등에 응답 없이 멈추는 경우가 있어, 모든 블루투스 작업에 제한 시간을 둔다
   function limit(promise, ms) {
@@ -1149,6 +1156,33 @@
   $('menuBtn').addEventListener('click', () => openPanel('settings'));
   $('navSettings').addEventListener('click', () => openPanel('settings'));
   $('sheetBg').addEventListener('click', () => openPanel(null));
+
+  // 터치 스크롤은 열린 창(시트) 안에서만 허용한다.
+  // 창 밖이나, 창이 더 스크롤할 곳이 없을 때 끌면 막아서 뒤 화면이 끌려가거나 새로고침되지 않게 한다.
+  // 창 맨 위에서 아래로 쓸어내리면 창을 닫는다.
+  let touchY = 0;
+  let pullStartedAtTop = false;
+  document.addEventListener('touchstart', (ev) => {
+    touchY = ev.touches[0].clientY;
+    pullStartedAtTop = $('sheet').scrollTop <= 0;
+  }, { passive: true });
+  document.addEventListener('touchmove', (ev) => {
+    const sheet = ev.target.closest('.sheet');
+    if (!sheet || !document.body.classList.contains('sheet-open')) {
+      ev.preventDefault();
+      return;
+    }
+    const dy = ev.touches[0].clientY - touchY;
+    const atTop = sheet.scrollTop <= 0;
+    const atBottom = sheet.scrollTop + sheet.clientHeight >= sheet.scrollHeight - 1;
+    if ((dy > 0 && atTop) || (dy < 0 && atBottom)) ev.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchend', (ev) => {
+    const dy = ev.changedTouches[0].clientY - touchY;
+    if (pullStartedAtTop && dy > 80 && ev.target.closest('.sheet') && document.body.classList.contains('sheet-open')) {
+      openPanel(null);
+    }
+  }, { passive: true });
   setInterval(() => { if (!busy) render(); }, 30000);
 
   if (!navigator.bluetooth) {
