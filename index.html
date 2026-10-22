@@ -46,13 +46,13 @@
   header {
     background: linear-gradient(200deg, var(--grad-b) 0%, var(--grad-a) 100%);
     color: #fff;
-    padding: env(safe-area-inset-top) 16px 28px;
+    padding: env(safe-area-inset-top) 16px 20px;
   }
   .topbar {
     display: grid;
     grid-template-columns: 44px 1fr 44px;
     align-items: center;
-    height: 56px;
+    height: 48px;
   }
   .topbar h1 { margin: 0; text-align: center; font-size: 22px; font-weight: 700; letter-spacing: .5px; }
   .icon-btn { width: 44px; height: 44px; display: grid; place-items: center; }
@@ -61,13 +61,13 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    margin-top: 18px;
+    margin-top: 4px;
   }
   .device-badge {
-    width: 92px; height: 92px; border-radius: 50%;
+    width: 72px; height: 72px; border-radius: 50%;
     background: rgba(255, 255, 255, .22);
     display: grid; place-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     position: relative;
   }
   .device-badge.busy::after {
@@ -76,8 +76,8 @@
     animation: spin 1s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  #devName { font-size: 24px; font-weight: 500; }
-  #devSub { font-size: 14px; opacity: .8; }
+  #devName { font-size: 22px; font-weight: 500; }
+  #devSub { font-size: 13px; opacity: .8; }
 
   /* ── 스위치 ── */
   main {
@@ -86,20 +86,20 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 40px;
-    padding: 32px 16px 8px;
+    gap: clamp(16px, 4vh, 40px);
+    padding: 20px 16px 4px;
   }
   .pill {
     width: min(100%, 340px);
-    height: 92px;
-    border-radius: 46px;
+    height: 84px;
+    border-radius: 42px;
     padding: 5px;
     background: var(--pill-ring);
     box-shadow: 0 6px 18px rgba(90, 104, 160, .12);
   }
   .pill-inner {
     height: 100%;
-    border-radius: 41px;
+    border-radius: 37px;
     background: #fff;
     border: 2px solid var(--pill-edge);
     display: grid;
@@ -133,11 +133,11 @@
   nav {
     display: flex;
     justify-content: space-around;
-    padding: 12px 16px max(20px, env(safe-area-inset-bottom));
+    padding: 8px 16px max(12px, env(safe-area-inset-bottom));
   }
-  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 14px; color: #6a6f86; min-width: 84px; }
+  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; color: #6a6f86; min-width: 84px; }
   .nav-circle {
-    width: 64px; height: 64px; border-radius: 50%;
+    width: 56px; height: 56px; border-radius: 50%;
     border: 1.5px solid #dde1ee;
     background: #fff;
     display: grid; place-items: center;
@@ -204,7 +204,7 @@
   </div>
   <div class="device">
     <button class="device-badge" id="badge" aria-label="기기 연결">
-      <svg width="34" height="50" viewBox="0 0 34 50" fill="none">
+      <svg width="28" height="41" viewBox="0 0 34 50" fill="none">
         <rect x="2" y="2" width="30" height="46" rx="9" fill="#fff" stroke="#e7e9f3" stroke-width="2"/>
         <path d="M5 25h24" stroke="#d8dbe8" stroke-width="1.5"/>
         <rect x="6" y="6" width="22" height="17" rx="6" fill="#f3f4f9"/>
@@ -295,7 +295,8 @@
   <button class="row-btn" id="pickOther">다른 기기 선택</button>
   <button class="row-btn" id="scanAll">기기가 안 보이면: 주변 모든 기기 보기</button>
   <p class="hint">반전은 스위처를 거꾸로 붙여서 ON/OFF가 반대로 동작할 때 켜세요.<br>
-    지금 연결된 기기: <span id="sheetDev">없음</span></p>
+    지금 연결된 기기: <span id="sheetDev">없음</span><br>
+    쓰기 방식: <span id="sheetMode">-</span></p>
 </div>
 
 <script>
@@ -334,6 +335,7 @@
       : device ? '대기 중 · 버튼을 누르면 연결'
       : '연결 안 됨 · 눌러서 연결';
     $('sheetDev').textContent = device ? (device.name || '이름 없는 기기') : '없음';
+    $('sheetMode').textContent = !characteristic ? '-' : writeMode(characteristic) === 'noResponse' ? '응답 없음' : '응답 받음';
     $('navInvert').classList.toggle('on', $('invert').checked);
     document.querySelectorAll('.pill').forEach((p) => {
       const last = load('last' + p.dataset.sw);
@@ -360,35 +362,56 @@
     save('lastName', device.name || '');
   }
 
+  // 실패했을 때 어느 단계였는지 보여주기 위함
+  let step = '';
+
   async function ensureCharacteristic() {
     if (characteristic && device.gatt.connected) return characteristic;
+    step = '연결';
     const server = await device.gatt.connect();
+    step = '서비스 찾기';
     const service = await server.getPrimaryService(SERVICE_UUID);
     characteristic = await service.getCharacteristic(CHAR_UUID);
     return characteristic;
   }
 
+  function writeMode(ch) {
+    const p = (ch && ch.properties) || {};
+    if (p.writeWithoutResponse && ch.writeValueWithoutResponse) return 'noResponse';
+    return 'response';
+  }
+
   async function writeByte(byte) {
     const data = new Uint8Array([byte]);
     const ch = await ensureCharacteristic();
-    try {
-      if (ch.writeValueWithResponse) await ch.writeValueWithResponse(data);
-      else await ch.writeValue(data);
-    } catch (e) {
-      if (ch.writeValueWithoutResponse) await ch.writeValueWithoutResponse(data);
-      else throw e;
+    step = '쓰기';
+    // 아이폰(Bluefy)에서는 응답 받는 쓰기가 기기에 전달돼 동작한 뒤에도 오류(코드 2)를
+    // 돌려주는 경우가 있어서, 기기가 지원하면 응답 없는 쓰기를 쓴다.
+    if (writeMode(ch) === 'noResponse') {
+      await ch.writeValueWithoutResponse(data);
+      return;
     }
+    if (ch.writeValueWithResponse) await ch.writeValueWithResponse(data);
+    else await ch.writeValue(data);
+  }
+
+  function errText(e) {
+    if (e === null || e === undefined) return '알 수 없는 오류';
+    if (typeof e !== 'object') return '코드 ' + e;
+    const parts = [e.name, e.code !== undefined ? '코드 ' + e.code : '', e.message].filter(Boolean);
+    return parts.length ? parts.join(' / ') : String(e);
   }
 
   async function run(fn) {
     if (busy) return;
     busy = true;
+    step = '';
     render('busy');
     try {
       await fn();
     } catch (e) {
       if (e && e.name === 'NotFoundError') toast('기기 선택이 취소되었습니다.');
-      else toast('실패: ' + (e && e.message ? e.message : e), 'err');
+      else toast('실패' + (step ? ' (' + step + ' 단계)' : '') + ': ' + errText(e), 'err');
     } finally {
       busy = false;
       render();
