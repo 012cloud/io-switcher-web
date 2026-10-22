@@ -435,6 +435,7 @@
     <button class="row-btn" id="pickOther">다른 기기 선택</button>
     <button class="row-btn" id="scanAll">기기가 안 보이면: 주변 모든 기기 보기</button>
     <p class="hint">반전은 스위처를 거꾸로 붙여서 ON/OFF가 반대로 동작할 때 켜세요. 예약의 켜기/끄기에도 똑같이 적용됩니다.</p>
+    <p class="hint">버전 <span id="appVersion"></span></p>
   </section>
 
   <section class="panel" data-panel="info">
@@ -519,6 +520,26 @@
   const AUTH_NAMES = { 0: '잠금 해제', 1: '잠김', 2: '공유 코드 불일치' };
 
   const $ = (id) => document.getElementById(id);
+  const APP_VERSION = '2026-10-23a';
+
+  // Bluefy는 권한 없는 서비스 등에 응답 없이 멈추는 경우가 있어, 모든 블루투스 작업에 제한 시간을 둔다
+  function limit(promise, ms) {
+    let timer;
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          const e = new Error((ms / 1000) + '초 동안 응답 없음');
+          e.name = 'TimeoutError';
+          reject(e);
+        }, ms);
+      }),
+    ]).finally(() => clearTimeout(timer));
+  }
+
+  // 예상 못 한 오류도 화면에 보이게 (원인 파악용)
+  window.addEventListener('error', (ev) => toast('페이지 오류: ' + ev.message, 'err'));
+  window.addEventListener('unhandledrejection', (ev) => toast('페이지 오류: ' + errText(ev.reason), 'err'));
   const pad = (n) => String(n).padStart(2, '0');
 
   function load(key) {
@@ -653,7 +674,8 @@
     renderInfo();
     renderTimers();
     renderStroke();
-    document.querySelectorAll('main button, nav button, .sheet button, .sheet input').forEach((el) => { el.disabled = busy; });
+    // 작업 중에는 블루투스를 쓰는 버튼만 잠그고, 화면 이동(예약·설정 열기 등)은 계속 되게 한다
+    document.querySelectorAll('.side, #badge, #bannerBtn, #addTimer, #tSave, #tDelete, #strokeTest, #strokeSave, #infoRefresh, #inspectBtn, #pickOther, #scanAll, .toggle input').forEach((el) => { el.disabled = busy; });
   }
 
   function renderInfo() {
@@ -732,7 +754,7 @@
   }
 
   async function optionalChar(svc, id) {
-    try { return await svc.getCharacteristic(id); } catch (e) { return null; }
+    try { return await limit(svc.getCharacteristic(id), 4000); } catch (e) { return null; }
   }
 
   async function ensureConnected() {
@@ -740,10 +762,10 @@
     if (chars.sw && device.gatt.connected) return;
     chars = {};
     step = '연결';
-    const server = await device.gatt.connect();
+    const server = await limit(device.gatt.connect(), 12000);
     step = '서비스 찾기';
-    const sw = await server.getPrimaryService(UUID.swSvc);
-    chars.sw = await sw.getCharacteristic(UUID.sw);
+    const sw = await limit(server.getPrimaryService(UUID.swSvc), 6000);
+    chars.sw = await limit(sw.getCharacteristic(UUID.sw), 6000);
     chars.stroke = await optionalChar(sw, UUID.stroke);
     const extra = [
       [UUID.battSvc, { batt: UUID.batt }],
@@ -755,10 +777,13 @@
     for (const [svcId, map] of extra) {
       let svc;
       try {
-        svc = await server.getPrimaryService(svcId);
+        svc = await limit(server.getPrimaryService(svcId), 4000);
       } catch (e) {
-        // 예전에 고른 기기는 이 서비스들의 권한이 없다
-        if (svcId === UUID.battSvc) state.missingPerm = true;
+        // 예전에 고른 기기는 이 서비스들의 권한이 없다. 배터리에서 막히면 나머지도 막혀 있으니 기다리지 않는다.
+        if (svcId === UUID.battSvc) {
+          state.missingPerm = true;
+          break;
+        }
         continue;
       }
       for (const [k, id] of Object.entries(map)) chars[k] = await optionalChar(svc, id);
@@ -788,12 +813,12 @@
   // 돌려주는 경우가 있어서, 지원하면 응답 없는 쓰기를 쓰고 중요한 값은 다시 읽어 확인한다.
   async function writeBytes(ch, bytes) {
     const data = new Uint8Array(bytes);
-    if (writeMode(ch) === 'noResponse') return ch.writeValueWithoutResponse(data);
-    if (ch.writeValueWithResponse) return ch.writeValueWithResponse(data);
-    return ch.writeValue(data);
+    if (writeMode(ch) === 'noResponse') return limit(ch.writeValueWithoutResponse(data), 6000);
+    if (ch.writeValueWithResponse) return limit(ch.writeValueWithResponse(data), 6000);
+    return limit(ch.writeValue(data), 6000);
   }
   async function readBytes(ch) {
-    const v = await ch.readValue();
+    const v = await limit(ch.readValue(), 6000);
     return new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
   }
 
@@ -1008,17 +1033,17 @@
   async function inspect() {
     await ensureConnected();
     const out = ['기기: ' + (device.name || '-')];
-    const services = await device.gatt.getPrimaryServices();
+    const services = await limit(device.gatt.getPrimaryServices(), 8000);
     for (const svc of services) {
       out.push('', '서비스 ' + shortUuid(svc.uuid));
       let list = [];
-      try { list = await svc.getCharacteristics(); } catch (e) { out.push('  목록 실패: ' + errText(e)); }
+      try { list = await limit(svc.getCharacteristics(), 6000); } catch (e) { out.push('  목록 실패: ' + errText(e)); }
       for (const c of list) {
         const p = c.properties || {};
         const flags = ['read', 'write', 'writeWithoutResponse', 'notify', 'indicate'].filter((k) => p[k]).join(',');
         let val = '';
         if (p.read) {
-          try { val = ' = ' + hex(await c.readValue()); } catch (e) { val = ' 읽기 실패: ' + errText(e); }
+          try { val = ' = ' + hex(await limit(c.readValue(), 6000)); } catch (e) { val = ' 읽기 실패: ' + errText(e); }
         }
         out.push('  ' + shortUuid(c.uuid) + ' [' + flags + ']' + val);
       }
@@ -1095,6 +1120,7 @@
     renderStroke();
   }));
 
+  $('appVersion').textContent = APP_VERSION;
   $('invert').checked = load('invert') === '1';
   $('invert').addEventListener('change', () => { save('invert', $('invert').checked ? '1' : '0'); render(); });
   $('nameInput').addEventListener('input', () => { save('displayName', $('nameInput').value.trim()); render(); });
