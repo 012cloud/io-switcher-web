@@ -74,13 +74,25 @@
     position: fixed;
     inset: 0;
     margin: 0;
-    display: flex;
-    flex-direction: column;
     background: linear-gradient(var(--body-top), var(--body-bottom));
     color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
     -webkit-user-select: none;
     user-select: none;
+  }
+  /* 화면 전체를 담는 안쪽 상자. 항상 1px 스크롤 가능하게 해서 끄는 동작을 이 상자가 받고,
+     overscroll-behavior: none 으로 튕김과 바깥(Bluefy 새로고침)으로 넘기는 것을 막는다 */
+  #app {
+    position: fixed;
+    inset: 0;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .app-inner {
+    min-height: calc(100% + 1px);
+    display: flex;
+    flex-direction: column;
   }
   button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }
   button:disabled { opacity: .5; }
@@ -227,7 +239,7 @@
     max-height: 85vh;
     max-height: 85dvh; /* 아이폰 주소창을 뺀 실제 보이는 높이 기준 */
     overflow-y: auto;
-    overscroll-behavior: contain;
+    overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
   }
   body.sheet-open .sheet-bg { opacity: 1; pointer-events: auto; }
@@ -323,6 +335,7 @@
 </style>
 </head>
 <body>
+<div id="app"><div class="app-inner">
 <header>
   <div class="topbar">
     <button class="icon-btn" id="menuBtn" aria-label="설정">
@@ -429,6 +442,7 @@
     <span>설정</span>
   </button>
 </nav>
+</div></div>
 
 <div class="sheet-bg" id="sheetBg"></div>
 <div class="sheet" id="sheet" role="dialog">
@@ -503,6 +517,7 @@
     </div>
     <p class="hint" id="strokeHint"></p>
   </section>
+  <div id="sheetSpacer"></div>
 </div>
 
 <script>
@@ -536,7 +551,7 @@
   const AUTH_NAMES = { 0: '잠금 해제', 1: '잠김', 2: '공유 코드 불일치' };
 
   const $ = (id) => document.getElementById(id);
-  const APP_VERSION = '2026-10-23c';
+  const APP_VERSION = '2026-10-23d';
 
   // Bluefy는 권한 없는 서비스 등에 응답 없이 멈추는 경우가 있어, 모든 블루투스 작업에 제한 시간을 둔다
   function limit(promise, ms) {
@@ -689,6 +704,7 @@
     renderInfo();
     renderTimers();
     renderStroke();
+    fitSheet();
     // 작업 중에는 블루투스를 쓰는 버튼만 잠그고, 화면 이동(예약·설정 열기 등)은 계속 되게 한다
     document.querySelectorAll('.side, #badge, #bannerBtn, #addTimer, #tSave, #tDelete, #strokeTest, #strokeSave, #infoRefresh, #inspectBtn, #pickOther, #scanAll, .toggle input').forEach((el) => { el.disabled = busy; });
   }
@@ -1088,6 +1104,21 @@
     if (name === 'settings') $('nameInput').value = load('displayName') || '';
     if (name !== 'info') $('diag').classList.remove('show');
     $('sheet').scrollTop = 0;
+    fitSheet();
+  }
+
+  // 내용이 짧아도 창이 항상 '스크롤 가능한 상자'가 되게 높이를 고정하고 1px 더 길게 만든다.
+  // 그래야 끄는 동작을 창이 받고 뒤 화면이나 Bluefy 새로고침으로 넘기지 않는다.
+  function fitSheet() {
+    const sh = $('sheet');
+    const sp = $('sheetSpacer');
+    const top = sh.scrollTop;
+    sh.style.height = '';
+    sp.style.height = '0px';
+    if (!document.body.classList.contains('sheet-open')) return;
+    sh.style.height = sh.offsetHeight + 'px';
+    if (sh.scrollHeight <= sh.clientHeight) sp.style.height = (sh.clientHeight - sh.scrollHeight + 1) + 'px';
+    sh.scrollTop = top;
   }
 
   function startEdit(t) {
