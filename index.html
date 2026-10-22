@@ -5,140 +5,298 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>I/O 스위처</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="I/O 스위처">
-<meta name="theme-color" content="#5b3fa8">
+<meta name="theme-color" content="#8f95ec">
+<meta name="color-scheme" content="light">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="icon.png">
 <style>
   :root {
-    --bg: #f4f2f8;
-    --card: #ffffff;
-    --text: #1d1a24;
-    --muted: #6b6578;
-    --line: #e3dfeb;
-    --accent: #5b3fa8;
-    --on: #2e9d5b;
-    --off: #5d5a66;
-    --err: #c0392b;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #141218;
-      --card: #1f1c25;
-      --text: #ece8f4;
-      --muted: #a39cb2;
-      --line: #322d3b;
-      --accent: #a58cf0;
-      --on: #3fbf74;
-      --off: #8a8596;
-      --err: #ff6b5b;
-    }
+    --grad-a: #a491ec;
+    --grad-b: #6f9fe8;
+    --body-top: #ffffff;
+    --body-bottom: #f1f4fb;
+    --ink: #4a4f66;
+    --ink-soft: #8a8fa6;
+    --pill-ring: #d9def0;
+    --pill-edge: #b9c2e2;
+    --pill-press: #e3e8f3;
+    --err: #d0453b;
+    --ok: #3e9e6a;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
   body {
     margin: 0;
-    background: var(--bg);
-    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(var(--body-top), var(--body-bottom));
+    color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
-    padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+    -webkit-user-select: none;
+    user-select: none;
   }
-  main { max-width: 480px; margin: 0 auto; }
-  h1 { font-size: 22px; margin: 8px 0 16px; }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-  .row { display: flex; align-items: center; gap: 10px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--off); flex: none; }
-  .dot.ok { background: var(--on); }
-  .dot.busy { background: var(--accent); animation: pulse 1s infinite; }
-  @keyframes pulse { 50% { opacity: .3; } }
-  #devName { font-weight: 600; }
-  #status { color: var(--muted); font-size: 14px; margin-top: 8px; min-height: 1.4em; word-break: break-all; }
-  #status.err { color: var(--err); }
-  button {
-    font: inherit;
-    border: 0;
-    border-radius: 12px;
-    cursor: pointer;
-    touch-action: manipulation;
-  }
-  button:disabled { opacity: .45; }
-  .connect {
-    width: 100%;
-    padding: 14px;
-    margin-top: 12px;
-    background: var(--accent);
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }
+  button:disabled { opacity: .5; }
+  svg { display: block; }
+
+  /* ── 상단 ── */
+  header {
+    background: linear-gradient(200deg, var(--grad-b) 0%, var(--grad-a) 100%);
     color: #fff;
-    font-weight: 600;
+    padding: env(safe-area-inset-top) 16px 28px;
   }
-  .sw-title { font-weight: 600; margin-bottom: 12px; }
-  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .pair button {
-    padding: 22px 0;
-    font-size: 20px;
-    font-weight: 700;
-    color: #fff;
+  .topbar {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+    align-items: center;
+    height: 56px;
   }
-  .btn-on { background: var(--on); }
-  .btn-off { background: var(--off); }
-  .opts label { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
-  .opts input { width: 20px; height: 20px; }
-  .link {
-    background: none;
-    color: var(--muted);
-    text-decoration: underline;
-    padding: 6px 0;
+  .topbar h1 { margin: 0; text-align: center; font-size: 22px; font-weight: 700; letter-spacing: .5px; }
+  .icon-btn { width: 44px; height: 44px; display: grid; place-items: center; }
+  .device {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+  }
+  .device-badge {
+    width: 92px; height: 92px; border-radius: 50%;
+    background: rgba(255, 255, 255, .22);
+    display: grid; place-items: center;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .device-badge.busy::after {
+    content: ""; position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, .7); border-right-color: transparent;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #devName { font-size: 24px; font-weight: 500; }
+  #devSub { font-size: 14px; opacity: .8; }
+
+  /* ── 스위치 ── */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    padding: 32px 16px 8px;
+  }
+  .pill {
+    width: min(100%, 340px);
+    height: 92px;
+    border-radius: 46px;
+    padding: 5px;
+    background: var(--pill-ring);
+    box-shadow: 0 6px 18px rgba(90, 104, 160, .12);
+  }
+  .pill-inner {
+    height: 100%;
+    border-radius: 41px;
+    background: #fff;
+    border: 2px solid var(--pill-edge);
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    align-items: center;
+    overflow: hidden;
+  }
+  .pill-inner .divider { width: 1px; height: 46%; background: #dfe3ef; }
+  .side {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    transition: background .2s;
+  }
+  .side.off.active { background: linear-gradient(270deg, #fff 0%, var(--pill-press) 100%); }
+  .side.on.active  { background: linear-gradient(90deg,  #fff 0%, var(--pill-press) 100%); }
+  .side:active { background: var(--pill-press); }
+
+  #toast {
+    min-height: 1.4em;
     font-size: 14px;
+    color: var(--ink-soft);
+    text-align: center;
+    padding: 0 16px;
+    word-break: break-all;
   }
-  #nobt { display: none; }
+  #toast.err { color: var(--err); }
+  #toast.ok { color: var(--ok); }
+
+  /* ── 하단 ── */
+  nav {
+    display: flex;
+    justify-content: space-around;
+    padding: 12px 16px max(20px, env(safe-area-inset-bottom));
+  }
+  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 14px; color: #6a6f86; min-width: 84px; }
+  .nav-circle {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 1.5px solid #dde1ee;
+    background: #fff;
+    display: grid; place-items: center;
+  }
+  .nav-btn.on .nav-circle { border-color: var(--grad-a); background: #f1eefd; }
+
+  /* ── 설정 시트 ── */
+  .sheet-bg {
+    position: fixed; inset: 0; background: rgba(30, 32, 50, .35);
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 8px 20px max(24px, env(safe-area-inset-bottom));
+    transform: translateY(100%); transition: transform .25s;
+    max-width: 520px; margin: 0 auto;
+  }
+  body.sheet-open .sheet-bg { opacity: 1; pointer-events: auto; }
+  body.sheet-open .sheet { transform: none; }
+  .grabber { width: 40px; height: 5px; border-radius: 3px; background: #dde1ee; margin: 4px auto 16px; }
+  .sheet h2 { font-size: 18px; margin: 0 0 12px; }
+  .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #eef0f6; }
+  .field input[type=text] {
+    font: inherit; text-align: right; border: 0; outline: 0; color: var(--ink); min-width: 0; flex: 1;
+    -webkit-user-select: text; user-select: text;
+  }
+  .field input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--grad-a); }
+  .sheet .row-btn { width: 100%; text-align: left; padding: 14px 0; border-bottom: 1px solid #eef0f6; }
+  .sheet .hint { font-size: 13px; color: var(--ink-soft); line-height: 1.5; margin: 14px 0 0; }
+
+  #nobt {
+    display: none;
+    margin: 12px 16px 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fff4f2;
+    color: #8a3a32;
+    font-size: 14px;
+    line-height: 1.5;
+  }
   #nobt.show { display: block; }
-  #nobt p { margin: 0 0 8px; line-height: 1.5; }
 </style>
 </head>
 <body>
+<header>
+  <div class="topbar">
+    <button class="icon-btn" id="menuBtn" aria-label="설정">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round">
+        <circle cx="5" cy="7" r=".6" fill="#fff"/><circle cx="5" cy="14" r=".6" fill="#fff"/><circle cx="5" cy="21" r=".6" fill="#fff"/>
+        <path d="M10 7h14M10 14h14M10 21h14"/>
+      </svg>
+    </button>
+    <h1>I/O</h1>
+    <button class="icon-btn" id="phoneBtn" aria-label="기기 연결">
+      <svg width="28" height="30" viewBox="0 0 28 30" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round">
+        <rect x="5" y="6" width="13" height="22" rx="3"/>
+        <path d="M10 24.5h3"/>
+        <circle cx="20" cy="7" r="6.5" fill="#fff" stroke="none"/>
+        <path d="M20 5v.2M20 7.2v3" stroke="#7f9be9" stroke-width="1.8"/>
+      </svg>
+    </button>
+  </div>
+  <div class="device">
+    <button class="device-badge" id="badge" aria-label="기기 연결">
+      <svg width="34" height="50" viewBox="0 0 34 50" fill="none">
+        <rect x="2" y="2" width="30" height="46" rx="9" fill="#fff" stroke="#e7e9f3" stroke-width="2"/>
+        <path d="M5 25h24" stroke="#d8dbe8" stroke-width="1.5"/>
+        <rect x="6" y="6" width="22" height="17" rx="6" fill="#f3f4f9"/>
+        <rect x="14" y="40" width="6" height="2.4" rx="1.2" fill="#d8dbe8"/>
+      </svg>
+    </button>
+    <div id="devName">내 스위처</div>
+    <div id="devSub">연결 안 됨 · 눌러서 연결</div>
+  </div>
+</header>
+
+<div id="nobt">이 브라우저는 블루투스를 지원하지 않습니다. 아이폰에서는 App Store의 <b>Bluefy</b> 앱을 설치하고, Bluefy에서 이 주소를 열어주세요.</div>
+
 <main>
-  <h1>I/O 스위처</h1>
-
-  <div class="card" id="nobt">
-    <p><strong>이 브라우저는 블루투스를 지원하지 않습니다.</strong></p>
-    <p>아이폰에서는 App Store의 <strong>Bluefy</strong> 앱을 설치하고, Bluefy에서 이 주소를 열어주세요.</p>
-  </div>
-
-  <div class="card">
-    <div class="row">
-      <span class="dot" id="dot"></span>
-      <span id="devName">연결 안 됨</span>
-    </div>
-    <div id="status"></div>
-    <button class="connect" id="connectBtn">기기 연결</button>
-  </div>
-
-  <div class="card">
-    <div class="sw-title">스위치 1</div>
-    <div class="pair">
-      <button class="btn-on sw" data-sw="1" data-act="on">ON</button>
-      <button class="btn-off sw" data-sw="1" data-act="off">OFF</button>
+  <div class="pill" data-sw="1">
+    <div class="pill-inner">
+      <button class="side off" data-act="off" aria-label="스위치 1 끄기">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linejoin="round">
+          <path d="M21.5 6.5A11 11 0 1 0 27.5 22 9 9 0 0 1 21.5 6.5z"/>
+        </svg>
+      </button>
+      <span class="divider"></span>
+      <button class="side on" data-act="on" aria-label="스위치 1 켜기">
+        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round">
+          <circle cx="19" cy="19" r="7"/>
+          <path d="M19 4v4M19 30v4M4 19h4M30 19h4M8.4 8.4l2.8 2.8M26.8 26.8l2.8 2.8M8.4 29.6l2.8-2.8M26.8 11.2l2.8-2.8"/>
+        </svg>
+      </button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="sw-title">스위치 2</div>
-    <div class="pair">
-      <button class="btn-on sw" data-sw="2" data-act="on">ON</button>
-      <button class="btn-off sw" data-sw="2" data-act="off">OFF</button>
+  <div class="pill" data-sw="2">
+    <div class="pill-inner">
+      <button class="side off" data-act="off" aria-label="스위치 2 끄기">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linejoin="round">
+          <path d="M21.5 6.5A11 11 0 1 0 27.5 22 9 9 0 0 1 21.5 6.5z"/>
+        </svg>
+      </button>
+      <span class="divider"></span>
+      <button class="side on" data-act="on" aria-label="스위치 2 켜기">
+        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round">
+          <circle cx="19" cy="19" r="7"/>
+          <path d="M19 4v4M19 30v4M4 19h4M30 19h4M8.4 8.4l2.8 2.8M26.8 26.8l2.8 2.8M8.4 29.6l2.8-2.8M26.8 11.2l2.8-2.8"/>
+        </svg>
+      </button>
     </div>
   </div>
 
-  <div class="card opts">
-    <label>ON/OFF 반전 <input type="checkbox" id="invert"></label>
-    <button class="link" id="scanAll">기기가 안 보이면: 주변 모든 기기 보기</button>
-  </div>
+  <div id="toast"></div>
 </main>
+
+<nav>
+  <button class="nav-btn" id="navConnect">
+    <span class="nav-circle">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 9l11 10-5.5 5V4L19 9 8 19"/>
+      </svg>
+    </span>
+    <span>기기 연결</span>
+  </button>
+  <button class="nav-btn" id="navInvert">
+    <span class="nav-circle">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 10h17l-4-4M23 18H6l4 4"/>
+      </svg>
+    </span>
+    <span>반전</span>
+  </button>
+  <button class="nav-btn" id="navSettings">
+    <span class="nav-circle">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round">
+        <path d="M5 8h18M5 14h18M5 20h18"/>
+        <rect x="8" y="6" width="4" height="4" rx="1" fill="#fff"/>
+        <rect x="16" y="12" width="4" height="4" rx="1" fill="#fff"/>
+        <rect x="10" y="18" width="4" height="4" rx="1" fill="#fff"/>
+      </svg>
+    </span>
+    <span>설정</span>
+  </button>
+</nav>
+
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet" role="dialog" aria-label="설정">
+  <div class="grabber"></div>
+  <h2>설정</h2>
+  <label class="field">기기 이름 <input type="text" id="nameInput" maxlength="20" placeholder="예: 안방"></label>
+  <label class="field">ON/OFF 반전 <input type="checkbox" id="invert"></label>
+  <button class="row-btn" id="pickOther">다른 기기 선택</button>
+  <button class="row-btn" id="scanAll">기기가 안 보이면: 주변 모든 기기 보기</button>
+  <p class="hint">반전은 스위처를 거꾸로 붙여서 ON/OFF가 반대로 동작할 때 켜세요.<br>
+    지금 연결된 기기: <span id="sheetDev">없음</span></p>
+</div>
 
 <script>
   // 안드로이드 앱(lib/main.dart)과 같은 값
@@ -161,22 +319,34 @@
     try { localStorage.setItem(key, value); } catch (e) { /* 저장 못 해도 동작에는 지장 없음 */ }
   }
 
-  function setStatus(msg, isErr) {
-    $('status').textContent = msg;
-    $('status').classList.toggle('err', !!isErr);
+  function toast(msg, kind) {
+    $('toast').textContent = msg;
+    $('toast').className = kind || '';
   }
 
-  function setState(state) {
-    $('dot').className = 'dot' + (state === 'ok' ? ' ok' : state === 'busy' ? ' busy' : '');
-    $('devName').textContent = device ? (device.name || '이름 없는 기기') : '연결 안 됨';
-    $('connectBtn').textContent = device ? '다른 기기 선택' : '기기 연결';
-    document.querySelectorAll('button').forEach((b) => { b.disabled = busy; });
+  function render(state) {
+    const connected = !!(device && device.gatt.connected);
+    $('badge').classList.toggle('busy', state === 'busy');
+    $('devName').textContent = load('displayName') || '내 스위처';
+    $('devSub').textContent =
+      state === 'busy' ? '연결 중…'
+      : connected ? '연결됨'
+      : device ? '대기 중 · 버튼을 누르면 연결'
+      : '연결 안 됨 · 눌러서 연결';
+    $('sheetDev').textContent = device ? (device.name || '이름 없는 기기') : '없음';
+    $('navInvert').classList.toggle('on', $('invert').checked);
+    document.querySelectorAll('.pill').forEach((p) => {
+      const last = load('last' + p.dataset.sw);
+      p.querySelector('.off').classList.toggle('active', last === 'off');
+      p.querySelector('.on').classList.toggle('active', last === 'on');
+    });
+    document.querySelectorAll('main button, nav button, .sheet button').forEach((b) => { b.disabled = busy; });
   }
 
   function watchDisconnect(d) {
     d.addEventListener('gattserverdisconnected', () => {
       characteristic = null;
-      if (!busy) { setState(); setStatus('연결 끊김 (버튼을 누르면 다시 연결합니다)'); }
+      if (!busy) render();
     });
   }
 
@@ -192,7 +362,6 @@
 
   async function ensureCharacteristic() {
     if (characteristic && device.gatt.connected) return characteristic;
-    setStatus('연결 중…');
     const server = await device.gatt.connect();
     const service = await server.getPrimaryService(SERVICE_UUID);
     characteristic = await service.getCharacteristic(CHAR_UUID);
@@ -214,16 +383,22 @@
   async function run(fn) {
     if (busy) return;
     busy = true;
-    setState('busy');
+    render('busy');
     try {
       await fn();
     } catch (e) {
-      if (e && e.name === 'NotFoundError') setStatus('기기 선택이 취소되었습니다.');
-      else setStatus('실패: ' + (e && e.message ? e.message : e), true);
+      if (e && e.name === 'NotFoundError') toast('기기 선택이 취소되었습니다.');
+      else toast('실패: ' + (e && e.message ? e.message : e), 'err');
     } finally {
       busy = false;
-      setState(device && device.gatt.connected ? 'ok' : '');
+      render();
     }
+  }
+
+  async function connect(acceptAll) {
+    await pickDevice(acceptAll);
+    await ensureCharacteristic();
+    toast('연결됨', 'ok');
   }
 
   async function toggle(sw, act) {
@@ -234,7 +409,8 @@
     for (let i = 0; i < 3; i++) {
       try {
         await writeByte(KEYS[sw][sent]);
-        setStatus('스위치 ' + sw + ' ' + act.toUpperCase() + ' 완료');
+        save('last' + sw, act);
+        toast('스위치 ' + sw + ' ' + act.toUpperCase() + ' 완료', 'ok');
         return;
       } catch (e) {
         lastErr = e;
@@ -255,32 +431,46 @@
       if (found) {
         device = found;
         watchDisconnect(device);
-        setStatus('이전 기기 기억됨 — 버튼을 누르면 연결합니다');
-        setState();
+        render();
       }
     } catch (e) { /* 지원 안 하면 무시 */ }
   }
 
+  function openSheet(open) {
+    document.body.classList.toggle('sheet-open', open);
+    if (open) $('nameInput').value = load('displayName') || '';
+  }
+
   $('invert').checked = load('invert') === '1';
-  $('invert').addEventListener('change', () => save('invert', $('invert').checked ? '1' : '0'));
+  $('invert').addEventListener('change', () => { save('invert', $('invert').checked ? '1' : '0'); render(); });
+  $('navInvert').addEventListener('click', () => {
+    $('invert').checked = !$('invert').checked;
+    save('invert', $('invert').checked ? '1' : '0');
+    toast($('invert').checked ? 'ON/OFF 반전 켜짐' : 'ON/OFF 반전 꺼짐');
+    render();
+  });
+  $('nameInput').addEventListener('input', () => { save('displayName', $('nameInput').value.trim()); render(); });
+  $('menuBtn').addEventListener('click', () => openSheet(true));
+  $('navSettings').addEventListener('click', () => openSheet(true));
+  $('sheetBg').addEventListener('click', () => openSheet(false));
 
   if (!navigator.bluetooth) {
     $('nobt').classList.add('show');
-    document.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+    render();
+    document.querySelectorAll('main button, #navConnect, #badge, #phoneBtn, #pickOther, #scanAll').forEach((b) => { b.disabled = true; });
   } else {
-    $('connectBtn').addEventListener('click', () => run(async () => {
-      await pickDevice(false);
-      await ensureCharacteristic();
-      setStatus('연결됨');
-    }));
-    $('scanAll').addEventListener('click', () => run(async () => {
-      await pickDevice(true);
-      await ensureCharacteristic();
-      setStatus('연결됨');
-    }));
-    document.querySelectorAll('.sw').forEach((b) => {
-      b.addEventListener('click', () => run(() => toggle(Number(b.dataset.sw), b.dataset.act)));
+    const connectTap = () => run(() => connect(false));
+    $('navConnect').addEventListener('click', connectTap);
+    $('badge').addEventListener('click', connectTap);
+    $('phoneBtn').addEventListener('click', connectTap);
+    $('pickOther').addEventListener('click', () => { openSheet(false); run(() => connect(false)); });
+    $('scanAll').addEventListener('click', () => { openSheet(false); run(() => connect(true)); });
+    document.querySelectorAll('.pill').forEach((p) => {
+      p.querySelectorAll('.side').forEach((b) => {
+        b.addEventListener('click', () => run(() => toggle(Number(p.dataset.sw), b.dataset.act)));
+      });
     });
+    render();
     restoreDevice();
   }
 </script>
