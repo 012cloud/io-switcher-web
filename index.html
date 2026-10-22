@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="I/O 스위처">
 <meta name="theme-color" content="#8f95ec">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="icon.png">
@@ -20,11 +20,52 @@
     --body-bottom: #f1f4fb;
     --ink: #4a4f66;
     --ink-soft: #8a8fa6;
+    --icon: #5b6078;
+    --surface: #ffffff;
+    --surface-2: #f4f5fa;
+    --line: #eef0f6;
     --pill-ring: #d9def0;
     --pill-edge: #b9c2e2;
     --pill-press: #e3e8f3;
+    --divider: #dfe3ef;
+    --nav-border: #dde1ee;
+    --nav-ink: #6a6f86;
+    --accent: #8b7be6;
+    --accent-soft: #f1eefd;
     --err: #d0453b;
     --ok: #3e9e6a;
+    --banner-bg: #fff1ef;
+    --banner-ink: #9b3a30;
+    --shadow: rgba(90, 104, 160, .12);
+    --scrim: rgba(30, 32, 50, .35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --grad-a: #5b4aa8;
+      --grad-b: #3a62ad;
+      --body-top: #15151c;
+      --body-bottom: #1b1c26;
+      --ink: #e3e5f0;
+      --ink-soft: #9a9db3;
+      --icon: #c9cce0;
+      --surface: #22232e;
+      --surface-2: #2a2b38;
+      --line: #30313f;
+      --pill-ring: #2c2f40;
+      --pill-edge: #454a68;
+      --pill-press: #343850;
+      --divider: #3a3e55;
+      --nav-border: #3a3d52;
+      --nav-ink: #b4b7cc;
+      --accent: #a594f5;
+      --accent-soft: #352f5c;
+      --err: #ff7b6b;
+      --ok: #5cc98c;
+      --banner-bg: #3a2326;
+      --banner-ink: #ffb4a8;
+      --shadow: rgba(0, 0, 0, .35);
+      --scrim: rgba(0, 0, 0, .55);
+    }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
@@ -69,7 +110,9 @@
     display: grid; place-items: center;
     margin-bottom: 4px;
     position: relative;
+    transition: box-shadow .4s;
   }
+  .device-badge.connected { box-shadow: 0 0 0 4px rgba(255, 255, 255, .18), 0 0 22px rgba(255, 255, 255, .45); }
   .device-badge.busy::after {
     content: ""; position: absolute; inset: -4px; border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, .7); border-right-color: transparent;
@@ -77,47 +120,68 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   #devName { font-size: 22px; font-weight: 500; }
-  #devSub { font-size: 13px; opacity: .8; }
+  #devSub { font-size: 13px; opacity: .9; display: flex; align-items: center; gap: 6px; }
 
-  /* ── 스위치 ── */
+  /* ── 가운데 ── */
   main {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: clamp(16px, 4vh, 40px);
-    padding: 20px 16px 4px;
+    gap: clamp(12px, 3.2vh, 36px);
+    padding: 16px 16px 4px;
   }
+  .banner {
+    display: none;
+    width: min(100%, 340px);
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--banner-bg);
+    color: var(--banner-ink);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .banner.show { display: flex; }
+  .banner span { flex: 1; }
+  .banner button { font-weight: 600; text-decoration: underline; flex: none; }
   .pill {
     width: min(100%, 340px);
     height: 84px;
     border-radius: 42px;
     padding: 5px;
     background: var(--pill-ring);
-    box-shadow: 0 6px 18px rgba(90, 104, 160, .12);
+    box-shadow: 0 6px 18px var(--shadow);
   }
   .pill-inner {
     height: 100%;
     border-radius: 37px;
-    background: #fff;
+    background: var(--surface);
     border: 2px solid var(--pill-edge);
     display: grid;
     grid-template-columns: 1fr 1px 1fr;
     align-items: center;
     overflow: hidden;
   }
-  .pill-inner .divider { width: 1px; height: 46%; background: #dfe3ef; }
+  .pill-inner .divider { width: 1px; height: 46%; background: var(--divider); }
   .side {
     height: 100%;
     display: grid;
     place-items: center;
+    color: var(--icon);
     transition: background .2s;
   }
-  .side.off.active { background: linear-gradient(270deg, #fff 0%, var(--pill-press) 100%); }
-  .side.on.active  { background: linear-gradient(90deg,  #fff 0%, var(--pill-press) 100%); }
+  .side.off.active { background: linear-gradient(270deg, var(--surface) 0%, var(--pill-press) 100%); }
+  .side.on.active  { background: linear-gradient(90deg,  var(--surface) 0%, var(--pill-press) 100%); }
   .side:active { background: var(--pill-press); }
-
+  #nextRes {
+    font-size: 14px;
+    color: var(--ink-soft);
+    min-height: 1.4em;
+    text-align: center;
+  }
   #toast {
     min-height: 1.4em;
     font-size: 14px;
@@ -125,6 +189,7 @@
     text-align: center;
     padding: 0 16px;
     word-break: break-all;
+    margin-top: -6px;
   }
   #toast.err { color: var(--err); }
   #toast.ok { color: var(--ok); }
@@ -135,23 +200,23 @@
     justify-content: space-around;
     padding: 8px 16px max(12px, env(safe-area-inset-bottom));
   }
-  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; color: #6a6f86; min-width: 84px; }
+  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; color: var(--nav-ink); min-width: 84px; }
   .nav-circle {
     width: 56px; height: 56px; border-radius: 50%;
-    border: 1.5px solid #dde1ee;
-    background: #fff;
+    border: 1.5px solid var(--nav-border);
+    background: var(--surface);
+    color: var(--icon);
     display: grid; place-items: center;
   }
-  .nav-btn.on .nav-circle { border-color: var(--grad-a); background: #f1eefd; }
 
-  /* ── 설정 시트 ── */
+  /* ── 시트 ── */
   .sheet-bg {
-    position: fixed; inset: 0; background: rgba(30, 32, 50, .35);
+    position: fixed; inset: 0; background: var(--scrim);
     opacity: 0; pointer-events: none; transition: opacity .2s;
   }
   .sheet {
     position: fixed; left: 0; right: 0; bottom: 0;
-    background: #fff;
+    background: var(--surface);
     border-radius: 20px 20px 0 0;
     padding: 8px 20px max(24px, env(safe-area-inset-bottom));
     transform: translateY(100%); transition: transform .25s;
@@ -160,30 +225,90 @@
   }
   body.sheet-open .sheet-bg { opacity: 1; pointer-events: auto; }
   body.sheet-open .sheet { transform: none; }
-  .grabber { width: 40px; height: 5px; border-radius: 3px; background: #dde1ee; margin: 4px auto 16px; }
-  .sheet h2 { font-size: 18px; margin: 0 0 12px; }
-  .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #eef0f6; }
+  .grabber { width: 40px; height: 5px; border-radius: 3px; background: var(--nav-border); margin: 4px auto 12px; }
+  .panel { display: none; }
+  .panel.show { display: block; }
+  .panel-head { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+  .panel-head h2 { font-size: 18px; margin: 0; flex: 1; }
+  .panel-head .back { font-size: 26px; line-height: 1; padding: 0 8px 0 0; color: var(--ink-soft); }
+  .panel-head .count { font-size: 14px; color: var(--ink-soft); }
+  .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
   .field input[type=text] {
-    font: inherit; text-align: right; border: 0; outline: 0; color: var(--ink); min-width: 0; flex: 1;
+    font: inherit; text-align: right; border: 0; outline: 0; color: var(--ink); background: none; min-width: 0; flex: 1;
     -webkit-user-select: text; user-select: text;
   }
-  .field input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--grad-a); }
-  .sheet .row-btn { width: 100%; text-align: left; padding: 14px 0; border-bottom: 1px solid #eef0f6; }
-  .sheet .hint { font-size: 13px; color: var(--ink-soft); line-height: 1.5; margin: 14px 0 0; }
+  .field input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); }
+  .row-btn { width: 100%; text-align: left; padding: 14px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+  .row-btn .chev { color: var(--ink-soft); }
+  .hint { font-size: 13px; color: var(--ink-soft); line-height: 1.5; margin: 14px 0 0; }
+  .btn {
+    width: 100%; padding: 14px; border-radius: 12px; font-weight: 600;
+    background: var(--accent); color: #fff; margin-top: 12px;
+  }
+  .btn.ghost { background: var(--surface-2); color: var(--ink); }
+  .btn.danger { background: none; color: var(--err); }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { flex: 1; }
+
+  /* 기기 정보 */
+  .info { margin: 0; }
+  .info div { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .info dt { color: var(--ink-soft); }
+  .info dd { margin: 0; text-align: right; }
   #diag {
     display: none; margin: 12px 0 0; padding: 12px; border-radius: 10px;
-    background: #f4f5fa; font: 12px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-all;
+    background: var(--surface-2); font: 12px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-all;
     -webkit-user-select: text; user-select: text;
   }
   #diag.show { display: block; }
+
+  /* 예약 */
+  .timer {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+  }
+  .timer.disabled .t-main { opacity: .45; }
+  .t-main { flex: 1; text-align: left; }
+  .t-time { font-size: 22px; font-weight: 600; }
+  .t-meta { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .toggle { position: relative; width: 50px; height: 30px; flex: none; }
+  .toggle input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .toggle span { position: absolute; inset: 0; border-radius: 15px; background: var(--nav-border); transition: background .2s; pointer-events: none; }
+  .toggle span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .toggle input:checked + span { background: var(--accent); }
+  .toggle input:checked + span::after { transform: translateX(20px); }
+  .empty { text-align: center; color: var(--ink-soft); padding: 28px 0 8px; font-size: 14px; }
+  .label { font-size: 13px; color: var(--ink-soft); margin: 16px 0 8px; }
+  #tTime {
+    font: inherit; font-size: 28px; font-weight: 600; color: var(--ink);
+    background: var(--surface-2); border: 0; border-radius: 12px; padding: 10px 14px; width: 100%;
+  }
+  .chips { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .chip, .seg button, .quick {
+    padding: 10px 0; border-radius: 10px; background: var(--surface-2); text-align: center;
+  }
+  .chip.on, .seg button.on { background: var(--accent); color: #fff; }
+  .quicks { display: flex; gap: 6px; margin-top: 6px; }
+  .quick { flex: 1; font-size: 13px; color: var(--ink-soft); padding: 6px 0; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  /* 손가락 길이 */
+  .strokes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .stroke-opt {
+    padding: 14px 0 12px; border-radius: 14px; background: var(--surface-2);
+    display: flex; flex-direction: column; align-items: center; gap: 10px; border: 2px solid transparent;
+  }
+  .stroke-opt.on { border-color: var(--accent); background: var(--accent-soft); }
+  .stroke-opt .bar { width: 10px; border-radius: 5px; background: var(--accent); }
+  .stroke-opt small { color: var(--ink-soft); font-size: 12px; }
 
   #nobt {
     display: none;
     margin: 12px 16px 0;
     padding: 12px 14px;
     border-radius: 12px;
-    background: #fff4f2;
-    color: #8a3a32;
+    background: var(--banner-bg);
+    color: var(--banner-ink);
     font-size: 14px;
     line-height: 1.5;
   }
@@ -200,7 +325,7 @@
       </svg>
     </button>
     <h1>I/O</h1>
-    <button class="icon-btn" id="phoneBtn" aria-label="기기 연결">
+    <button class="icon-btn" id="infoBtn" aria-label="기기 정보">
       <svg width="28" height="30" viewBox="0 0 28 30" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round">
         <rect x="5" y="6" width="13" height="22" rx="3"/>
         <path d="M10 24.5h3"/>
@@ -219,23 +344,25 @@
       </svg>
     </button>
     <div id="devName">내 스위처</div>
-    <div id="devSub">연결 안 됨 · 눌러서 연결</div>
+    <div id="devSub"></div>
   </div>
 </header>
 
 <div id="nobt">이 브라우저는 블루투스를 지원하지 않습니다. 아이폰에서는 App Store의 <b>Bluefy</b> 앱을 설치하고, Bluefy에서 이 주소를 열어주세요.</div>
 
 <main>
+  <div class="banner" id="banner"><span id="bannerText"></span><button id="bannerBtn" hidden>다시 고르기</button></div>
+
   <div class="pill" data-sw="1">
     <div class="pill-inner">
       <button class="side off" data-act="off" aria-label="스위치 1 끄기">
-        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linejoin="round">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
           <path d="M21.5 6.5A11 11 0 1 0 27.5 22 9 9 0 0 1 21.5 6.5z"/>
         </svg>
       </button>
       <span class="divider"></span>
       <button class="side on" data-act="on" aria-label="스위치 1 켜기">
-        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round">
+        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
           <circle cx="19" cy="19" r="7"/>
           <path d="M19 4v4M19 30v4M4 19h4M30 19h4M8.4 8.4l2.8 2.8M26.8 26.8l2.8 2.8M8.4 29.6l2.8-2.8M26.8 11.2l2.8-2.8"/>
         </svg>
@@ -246,13 +373,13 @@
   <div class="pill" data-sw="2">
     <div class="pill-inner">
       <button class="side off" data-act="off" aria-label="스위치 2 끄기">
-        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linejoin="round">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
           <path d="M21.5 6.5A11 11 0 1 0 27.5 22 9 9 0 0 1 21.5 6.5z"/>
         </svg>
       </button>
       <span class="divider"></span>
       <button class="side on" data-act="on" aria-label="스위치 2 켜기">
-        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round">
+        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
           <circle cx="19" cy="19" r="7"/>
           <path d="M19 4v4M19 30v4M4 19h4M30 19h4M8.4 8.4l2.8 2.8M26.8 26.8l2.8 2.8M8.4 29.6l2.8-2.8M26.8 11.2l2.8-2.8"/>
         </svg>
@@ -260,33 +387,36 @@
     </div>
   </div>
 
+  <div id="nextRes"></div>
   <div id="toast"></div>
 </main>
 
 <nav>
-  <button class="nav-btn" id="navConnect">
+  <button class="nav-btn" id="navTimers">
     <span class="nav-circle">
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M8 9l11 10-5.5 5V4L19 9 8 19"/>
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="14" cy="16" r="8.5"/>
+        <path d="M14 16l3.2-3.2M11 3.5h6M14 3.5v4"/>
       </svg>
     </span>
-    <span>기기 연결</span>
+    <span>예약</span>
   </button>
-  <button class="nav-btn" id="navInvert">
+  <button class="nav-btn" id="navStroke">
     <span class="nav-circle">
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 10h17l-4-4M23 18H6l4 4"/>
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <rect x="8.5" y="3.5" width="11" height="21" rx="2.5"/>
+        <path d="M15.5 8h2M15.5 11h2M15.5 14h2M15.5 17h2M13 21.2h2"/>
       </svg>
     </span>
-    <span>반전</span>
+    <span>손가락 길이</span>
   </button>
   <button class="nav-btn" id="navSettings">
     <span class="nav-circle">
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#5b6078" stroke-width="1.6" stroke-linecap="round">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M5 8h18M5 14h18M5 20h18"/>
-        <rect x="8" y="6" width="4" height="4" rx="1" fill="#fff"/>
-        <rect x="16" y="12" width="4" height="4" rx="1" fill="#fff"/>
-        <rect x="10" y="18" width="4" height="4" rx="1" fill="#fff"/>
+        <rect x="8" y="6" width="4" height="4" rx="1" fill="var(--surface)"/>
+        <rect x="16" y="12" width="4" height="4" rx="1" fill="var(--surface)"/>
+        <rect x="10" y="18" width="4" height="4" rx="1" fill="var(--surface)"/>
       </svg>
     </span>
     <span>설정</span>
@@ -294,35 +424,102 @@
 </nav>
 
 <div class="sheet-bg" id="sheetBg"></div>
-<div class="sheet" id="sheet" role="dialog" aria-label="설정">
+<div class="sheet" id="sheet" role="dialog">
   <div class="grabber"></div>
-  <h2>설정</h2>
-  <label class="field">기기 이름 <input type="text" id="nameInput" maxlength="20" placeholder="예: 안방"></label>
-  <label class="field">ON/OFF 반전 <input type="checkbox" id="invert"></label>
-  <button class="row-btn" id="pickOther">다른 기기 선택</button>
-  <button class="row-btn" id="scanAll">기기가 안 보이면: 주변 모든 기기 보기</button>
-  <button class="row-btn" id="inspectBtn">기기 정보 보기 (배터리 위치 찾기)</button>
-  <p class="hint">반전은 스위처를 거꾸로 붙여서 ON/OFF가 반대로 동작할 때 켜세요.<br>
-    지금 연결된 기기: <span id="sheetDev">없음</span><br>
-    쓰기 방식: <span id="sheetMode">-</span></p>
-  <pre id="diag"></pre>
+
+  <section class="panel" data-panel="settings">
+    <div class="panel-head"><h2>설정</h2></div>
+    <label class="field">기기 이름 <input type="text" id="nameInput" maxlength="20" placeholder="예: 안방"></label>
+    <label class="field">ON/OFF 반전 <input type="checkbox" id="invert"></label>
+    <button class="row-btn" data-open="info">기기 정보 <span class="chev">›</span></button>
+    <button class="row-btn" id="pickOther">다른 기기 선택</button>
+    <button class="row-btn" id="scanAll">기기가 안 보이면: 주변 모든 기기 보기</button>
+    <p class="hint">반전은 스위처를 거꾸로 붙여서 ON/OFF가 반대로 동작할 때 켜세요. 예약의 켜기/끄기에도 똑같이 적용됩니다.</p>
+  </section>
+
+  <section class="panel" data-panel="info">
+    <div class="panel-head"><button class="back" data-open="settings" aria-label="뒤로">‹</button><h2>기기 정보</h2></div>
+    <dl class="info">
+      <div><dt>기기</dt><dd id="iName">-</dd></div>
+      <div><dt>배터리</dt><dd id="iBatt">-</dd></div>
+      <div><dt>펌웨어</dt><dd id="iFw">-</dd></div>
+      <div><dt>잠금 상태</dt><dd id="iAuth">-</dd></div>
+      <div><dt>기기 시계</dt><dd id="iClock">-</dd></div>
+      <div><dt>시계 맞춘 시각</dt><dd id="iSync">-</dd></div>
+      <div><dt>쓰기 방식</dt><dd id="iMode">-</dd></div>
+    </dl>
+    <div class="btn-row">
+      <button class="btn ghost" id="infoRefresh">새로 읽기</button>
+      <button class="btn ghost" id="inspectBtn">원시 데이터</button>
+    </div>
+    <pre id="diag"></pre>
+  </section>
+
+  <section class="panel" data-panel="timers">
+    <div class="panel-head"><h2>예약</h2><span class="count" id="timerCount"></span></div>
+    <div id="timerList"></div>
+    <button class="btn" id="addTimer">+ 예약 추가</button>
+    <p class="hint">예약은 기기에 저장돼서 이 페이지를 닫아도 실행됩니다. 기기 시계는 연결할 때마다 휴대폰 시각으로 맞춥니다.</p>
+  </section>
+
+  <section class="panel" data-panel="timerEdit">
+    <div class="panel-head"><button class="back" data-open="timers" aria-label="뒤로">‹</button><h2 id="editTitle">예약 추가</h2></div>
+    <div class="label">시각</div>
+    <input type="time" id="tTime" value="07:00">
+    <div class="label">요일</div>
+    <div class="chips" id="dayChips"></div>
+    <div class="quicks">
+      <button class="quick" data-q="all">매일</button>
+      <button class="quick" data-q="weekday">평일</button>
+      <button class="quick" data-q="weekend">주말</button>
+    </div>
+    <div class="label">스위치</div>
+    <div class="seg" data-k="target"><button data-v="0">스위치 1</button><button data-v="1">스위치 2</button></div>
+    <div class="label">동작</div>
+    <div class="seg" data-k="action"><button data-v="0">켜기</button><button data-v="1">끄기</button></div>
+    <button class="btn" id="tSave">저장</button>
+    <button class="btn danger" id="tDelete">예약 삭제</button>
+  </section>
+
+  <section class="panel" data-panel="stroke">
+    <div class="panel-head"><h2>손가락 길이</h2></div>
+    <p class="hint" style="margin-top:0">스위처가 벽 스위치를 누르는 깊이입니다. <b>눌러보기</b>로 잘 눌리는지 확인한 뒤 <b>저장</b>하세요.</p>
+    <div class="strokes">
+      <button class="stroke-opt" data-level="0"><span class="bar" style="height:14px"></span>짧게<small>살짝</small></button>
+      <button class="stroke-opt" data-level="1"><span class="bar" style="height:26px"></span>중간<small>보통</small></button>
+      <button class="stroke-opt" data-level="2"><span class="bar" style="height:38px"></span>길게<small>깊게</small></button>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="strokeTest">눌러보기</button>
+      <button class="btn" id="strokeSave">저장</button>
+    </div>
+    <p class="hint" id="strokeHint"></p>
+  </section>
 </div>
 
 <script>
-  // 안드로이드 앱(lib/main.dart)과 같은 값
-  const SERVICE_UUID = '0000150b-0000-1000-8000-00805f9b34fb';
-  const CHAR_UUID = '000015ba-0000-1000-8000-00805f9b34fb';
-  // 표준 배터리/기기 정보 서비스. 선택창에서 기기를 고를 때 접근 권한을 같이 받아야 읽을 수 있다.
-  const OPTIONAL_SERVICES = [SERVICE_UUID, 'battery_service', 'device_information'];
+  // ── 기기 규칙 (docs/ble-protocol.md 참고) ──
+  const U = (x) => '0000' + x + '-0000-1000-8000-00805f9b34fb';
+  const UUID = {
+    battSvc: U('150a'), batt: U('15aa'),
+    swSvc: U('150b'), sw: U('15ba'), stroke: U('15bb'),
+    timerSvc: U('150c'), timerOp: U('15ca'), timers: U('25ca'),
+    authSvc: U('150d'), auth: U('25da'),
+    infoSvc: U('150e'), fw: U('25ea'), clock: U('45ea'),
+  };
+  // 선택창에서 기기를 고를 때 이 서비스들의 접근 권한을 같이 받아야 읽고 쓸 수 있다
+  const OPTIONAL_SERVICES = [UUID.swSvc, UUID.battSvc, UUID.timerSvc, UUID.authSvc, UUID.infoSvc];
+  // 스위치 명령. 스위치 2 ON은 공식 앱이 02를 쓰지만 이 기기는 05로도 동작함을 확인했다.
   const KEYS = {
     1: { on: 0x00, off: 0x01 },
     2: { on: 0x05, off: 0x03 },
   };
+  const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
+  const STROKE_NAMES = ['짧게', '중간', '길게'];
+  const AUTH_NAMES = { 0: '잠금 해제', 1: '잠김', 2: '공유 코드 불일치' };
 
   const $ = (id) => document.getElementById(id);
-  let device = null;
-  let characteristic = null;
-  let busy = false;
+  const pad = (n) => String(n).padStart(2, '0');
 
   function load(key) {
     try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -330,42 +527,196 @@
   function save(key, value) {
     try { localStorage.setItem(key, value); } catch (e) { /* 저장 못 해도 동작에는 지장 없음 */ }
   }
+  function loadJSON(key) {
+    try { return JSON.parse(load(key)); } catch (e) { return null; }
+  }
+  function loadNum(key) {
+    const v = load(key);
+    return v === null || v === '' || isNaN(Number(v)) ? null : Number(v);
+  }
 
+  let device = null;
+  let chars = {};
+  let busy = false;
+  let step = '';
+  let editing = null;
+  let strokeChoice = null;
+
+  // 마지막으로 읽은 값. 저장소가 막힌 환경에서도 이번 세션 동안은 보이도록 메모리에 둔다.
+  const state = {
+    battery: loadNum('battery'),
+    fw: load('fw'),
+    authority: null,
+    clockRead: null,
+    clockSyncedAt: loadNum('clockSyncedAt'),
+    timers: loadJSON('timers'),
+    stroke: null,
+    missingPerm: false,
+  };
+
+  // ── 표시 ──
   function toast(msg, kind) {
     $('toast').textContent = msg;
     $('toast').className = kind || '';
   }
 
-  // 마지막으로 읽은 배터리 잔량. 저장소가 막힌 환경에서도 이번 세션 동안은 보이도록 메모리에 둔다.
-  let battery = load('battery');
-
-  function batteryText() {
-    return battery === null ? '' : ' · 배터리 ' + battery + '%';
+  function batteryColor(b) {
+    return b < 5 ? '#ff8a80' : b < 20 ? '#ffd27a' : '#ffffff';
+  }
+  function batteryLabel(b) {
+    return b < 5 ? '배터리 충전 필요' : '배터리 충분함';
+  }
+  function batteryIcon(b) {
+    const w = Math.max(1.5, 14.5 * b / 100);
+    return '<svg width="22" height="12" viewBox="0 0 22 12" fill="none">'
+      + '<rect x=".75" y=".75" width="18" height="10.5" rx="2.6" stroke="#fff" stroke-width="1.3"/>'
+      + '<rect x="19.6" y="4" width="1.8" height="4" rx=".9" fill="#fff"/>'
+      + '<rect x="2.5" y="2.5" width="' + w.toFixed(1) + '" height="7" rx="1.2" fill="' + batteryColor(b) + '"/></svg>';
   }
 
-  function render(state) {
+  function fmtTime(h, m) {
+    return (h < 12 ? '오전 ' : '오후 ') + ((h % 12) || 12) + ':' + pad(m);
+  }
+  function fmtDays(days) {
+    const n = days.filter(Boolean).length;
+    if (n === 7) return '매일';
+    if (n === 5 && days.slice(0, 5).every(Boolean)) return '평일';
+    if (n === 2 && days[5] && days[6]) return '주말';
+    return DAY_NAMES.filter((_, i) => days[i]).join(' ') || '요일 없음';
+  }
+  // 반전 설정을 예약의 켜기/끄기에도 적용 (기기에는 원래 값으로 저장)
+  const uiAction = (raw) => ($('invert').checked ? 1 - raw : raw);
+  const rawAction = (ui) => ($('invert').checked ? 1 - ui : ui);
+  function timerDesc(t) {
+    return '스위치 ' + (t.target + 1) + ' ' + (uiAction(t.action) === 0 ? '켜기' : '끄기');
+  }
+
+  function nextTimer() {
+    if (!state.timers) return null;
+    const now = new Date();
+    let best = null;
+    for (const t of state.timers) {
+      if (!t.enable || !t.days.some(Boolean)) continue;
+      for (let d = 0; d < 8; d++) {
+        const when = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d, t.hour, t.min);
+        if (when <= now || !t.days[(when.getDay() + 6) % 7]) continue;
+        if (!best || when < best.when) best = { t, when };
+        break;
+      }
+    }
+    return best;
+  }
+  function whenText(when) {
+    const now = new Date();
+    const diff = Math.round((new Date(when.getFullYear(), when.getMonth(), when.getDate())
+      - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+    const day = diff === 0 ? '오늘' : diff === 1 ? '내일' : DAY_NAMES[(when.getDay() + 6) % 7] + '요일';
+    return day + ' ' + pad(when.getHours()) + ':' + pad(when.getMinutes());
+  }
+
+  function render(mode) {
     const connected = !!(device && device.gatt.connected);
-    $('badge').classList.toggle('busy', state === 'busy');
+    const b = state.battery;
+    $('badge').classList.toggle('busy', mode === 'busy');
+    $('badge').classList.toggle('connected', connected && mode !== 'busy');
     $('devName').textContent = load('displayName') || '내 스위처';
-    $('devSub').textContent =
-      state === 'busy' ? '연결 중…'
-      : connected ? '연결됨' + batteryText()
-      : device ? '대기 중' + batteryText() + ' · 버튼을 누르면 연결'
+
+    const status = mode === 'busy' ? '연결 중…'
+      : connected ? '연결됨'
+      : device ? '대기 중'
       : '연결 안 됨 · 눌러서 연결';
-    $('sheetDev').textContent = device ? (device.name || '이름 없는 기기') : '없음';
-    $('sheetMode').textContent = !characteristic ? '-' : writeMode(characteristic) === 'noResponse' ? '응답 없음' : '응답 받음';
-    $('navInvert').classList.toggle('on', $('invert').checked);
+    $('devSub').innerHTML = b === null ? '' : batteryIcon(b);
+    $('devSub').append(b === null ? status : batteryLabel(b) + ' (' + b + '%) · ' + status);
+
+    // 알림 띠: 권한 다시 받기가 필요하면 그게 먼저, 아니면 배터리 부족
+    if (state.missingPerm) {
+      $('bannerText').textContent = '배터리·예약·손가락 길이를 쓰려면 기기를 한 번 다시 골라주세요.';
+      $('bannerBtn').hidden = false;
+      $('banner').classList.add('show');
+    } else if (b !== null && b < 5) {
+      $('bannerText').textContent = '배터리가 ' + b + '% 남았어요. 스위처를 충전해 주세요.';
+      $('bannerBtn').hidden = true;
+      $('banner').classList.add('show');
+    } else {
+      $('banner').classList.remove('show');
+    }
+
+    const next = nextTimer();
+    $('nextRes').textContent = next ? '⏰ 다음 예약 · ' + whenText(next.when) + ' ' + timerDesc(next.t) : '';
+
     document.querySelectorAll('.pill').forEach((p) => {
       const last = load('last' + p.dataset.sw);
       p.querySelector('.off').classList.toggle('active', last === 'off');
       p.querySelector('.on').classList.toggle('active', last === 'on');
     });
-    document.querySelectorAll('main button, nav button, .sheet button').forEach((b) => { b.disabled = busy; });
+
+    renderInfo();
+    renderTimers();
+    renderStroke();
+    document.querySelectorAll('main button, nav button, .sheet button, .sheet input').forEach((el) => { el.disabled = busy; });
   }
 
+  function renderInfo() {
+    const b = state.battery;
+    $('iName').textContent = device ? (device.name || '이름 없는 기기') : '-';
+    $('iBatt').textContent = b === null ? '-' : b + '% (' + batteryLabel(b) + ')';
+    $('iFw').textContent = state.fw || '-';
+    $('iAuth').textContent = state.authority === null ? '-' : (AUTH_NAMES[state.authority] || '알 수 없음 (' + state.authority + ')');
+    const c = state.clockRead;
+    $('iClock').textContent = c ? (DAY_NAMES[c[0]] || '?') + '요일 ' + pad(c[1]) + ':' + pad(c[2]) : '-';
+    const s = state.clockSyncedAt;
+    $('iSync').textContent = s ? new Date(s).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+    $('iMode').textContent = !chars.sw ? '-' : writeMode(chars.sw) === 'noResponse' ? '응답 없음' : '응답 받음';
+  }
+
+  function renderTimers() {
+    const list = $('timerList');
+    list.textContent = '';
+    const timers = (state.timers || []).slice().sort((a, b) => a.hour * 60 + a.min - (b.hour * 60 + b.min));
+    $('timerCount').textContent = state.timers ? timers.length + ' / 10' : '';
+    if (!state.timers) {
+      list.innerHTML = '<div class="empty">기기에 연결하면 예약을 불러옵니다.</div>';
+    } else if (!timers.length) {
+      list.innerHTML = '<div class="empty">예약이 없습니다.</div>';
+    }
+    for (const t of timers) {
+      const row = document.createElement('div');
+      row.className = 'timer' + (t.enable ? '' : ' disabled');
+      const main = document.createElement('button');
+      main.className = 't-main';
+      main.dataset.edit = t.id;
+      const time = document.createElement('div');
+      time.className = 't-time';
+      time.textContent = fmtTime(t.hour, t.min);
+      const meta = document.createElement('div');
+      meta.className = 't-meta';
+      meta.textContent = fmtDays(t.days) + ' · ' + timerDesc(t);
+      main.append(time, meta);
+      const tog = document.createElement('label');
+      tog.className = 'toggle';
+      tog.innerHTML = '<input type="checkbox" aria-label="예약 켜기/끄기"><span></span>';
+      tog.querySelector('input').checked = t.enable;
+      tog.querySelector('input').dataset.toggle = t.id;
+      row.append(main, tog);
+      list.append(row);
+    }
+    $('addTimer').hidden = !!(state.timers && state.timers.length >= 10);
+  }
+
+  function renderStroke() {
+    const sel = strokeChoice !== null ? strokeChoice : state.stroke;
+    document.querySelectorAll('.stroke-opt').forEach((b) => b.classList.toggle('on', Number(b.dataset.level) === sel));
+    let hint = '현재 기기 설정: ' + (state.stroke === null ? '모름' : STROKE_NAMES[state.stroke]);
+    // 펌웨어 기능 번호(a.b.c의 b)가 6 미만이면 지원하지 않을 수 있다
+    const feature = state.fw ? Number(state.fw.split('.')[1]) : null;
+    if (feature !== null && feature < 6) hint += ' · 이 펌웨어(' + state.fw + ')에서는 동작하지 않을 수 있어요';
+    $('strokeHint').textContent = hint;
+  }
+
+  // ── 블루투스 ──
   function watchDisconnect(d) {
     d.addEventListener('gattserverdisconnected', () => {
-      characteristic = null;
+      chars = {};
       if (!busy) render();
     });
   }
@@ -375,34 +726,57 @@
       ? { acceptAllDevices: true, optionalServices: OPTIONAL_SERVICES }
       : { filters: [{ namePrefix: 'SWITCHER_M' }], optionalServices: OPTIONAL_SERVICES };
     device = await navigator.bluetooth.requestDevice(opts);
-    characteristic = null;
+    chars = {};
     watchDisconnect(device);
     save('lastName', device.name || '');
   }
 
-  // 실패했을 때 어느 단계였는지 보여주기 위함
-  let step = '';
+  async function optionalChar(svc, id) {
+    try { return await svc.getCharacteristic(id); } catch (e) { return null; }
+  }
 
-  async function ensureCharacteristic() {
-    if (characteristic && device.gatt.connected) return characteristic;
+  async function ensureConnected() {
+    if (!device) await pickDevice(false);
+    if (chars.sw && device.gatt.connected) return;
+    chars = {};
     step = '연결';
     const server = await device.gatt.connect();
     step = '서비스 찾기';
-    const service = await server.getPrimaryService(SERVICE_UUID);
-    characteristic = await service.getCharacteristic(CHAR_UUID);
-    await readBattery(server);
-    return characteristic;
+    const sw = await server.getPrimaryService(UUID.swSvc);
+    chars.sw = await sw.getCharacteristic(UUID.sw);
+    chars.stroke = await optionalChar(sw, UUID.stroke);
+    const extra = [
+      [UUID.battSvc, { batt: UUID.batt }],
+      [UUID.timerSvc, { timerOp: UUID.timerOp, timers: UUID.timers }],
+      [UUID.authSvc, { auth: UUID.auth }],
+      [UUID.infoSvc, { fw: UUID.fw, clock: UUID.clock }],
+    ];
+    state.missingPerm = false;
+    for (const [svcId, map] of extra) {
+      let svc;
+      try {
+        svc = await server.getPrimaryService(svcId);
+      } catch (e) {
+        // 예전에 고른 기기는 이 서비스들의 권한이 없다
+        if (svcId === UUID.battSvc) state.missingPerm = true;
+        continue;
+      }
+      for (const [k, id] of Object.entries(map)) chars[k] = await optionalChar(svc, id);
+    }
+    await afterConnect();
   }
 
-  // 표준 배터리 서비스(0x180F)가 있으면 잔량(%)을 읽는다. 없거나 권한이 없으면 조용히 넘어감.
-  async function readBattery(server) {
-    try {
-      const svc = await server.getPrimaryService('battery_service');
-      const ch = await svc.getCharacteristic('battery_level');
-      const v = await ch.readValue();
-      battery = String(v.getUint8(0));
-      save('battery', battery);
-    } catch (e) { /* 배터리 정보 없음 */ }
+  // 공식 앱과 같은 순서: 배터리 → 잠금 상태 → 기기 시계 맞추기. 부가 기능 실패가 스위치 조작을 막지 않게 한다.
+  async function afterConnect() {
+    await quietly(readBattery);
+    await quietly(readAuthority);
+    await quietly(syncClock);
+    if (!state.fw) await quietly(readFirmware);
+    await quietly(readTimers);
+    step = '';
+  }
+  async function quietly(fn) {
+    try { await fn(); } catch (e) { /* 무시 */ }
   }
 
   function writeMode(ch) {
@@ -410,20 +784,150 @@
     if (p.writeWithoutResponse && ch.writeValueWithoutResponse) return 'noResponse';
     return 'response';
   }
+  // 아이폰(Bluefy)에서는 응답 받는 쓰기가 기기에 전달돼 동작한 뒤에도 오류(코드 2)를
+  // 돌려주는 경우가 있어서, 지원하면 응답 없는 쓰기를 쓰고 중요한 값은 다시 읽어 확인한다.
+  async function writeBytes(ch, bytes) {
+    const data = new Uint8Array(bytes);
+    if (writeMode(ch) === 'noResponse') return ch.writeValueWithoutResponse(data);
+    if (ch.writeValueWithResponse) return ch.writeValueWithResponse(data);
+    return ch.writeValue(data);
+  }
+  async function readBytes(ch) {
+    const v = await ch.readValue();
+    return new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
+  }
 
-  async function writeByte(byte) {
-    const data = new Uint8Array([byte]);
-    const ch = await ensureCharacteristic();
-    step = '쓰기';
-    // 아이폰(Bluefy)에서는 응답 받는 쓰기가 기기에 전달돼 동작한 뒤에도 오류(코드 2)를
-    // 돌려주는 경우가 있어서, 기기가 지원하면 응답 없는 쓰기를 쓴다.
-    if (writeMode(ch) === 'noResponse') {
-      await ch.writeValueWithoutResponse(data);
+  async function readBattery() {
+    if (!chars.batt) return;
+    const b = (await readBytes(chars.batt))[0];
+    // 0~100 밖의 값은 공식 앱도 잘못된 값으로 보고 무시한다
+    if (b >= 0 && b <= 100) {
+      state.battery = b;
+      save('battery', String(b));
+    }
+  }
+
+  async function readAuthority() {
+    if (!chars.auth) return;
+    state.authority = (await readBytes(chars.auth))[0];
+  }
+
+  async function readFirmware() {
+    if (!chars.fw) return;
+    const v = await readBytes(chars.fw);
+    state.fw = v[0] + '.' + v[1] + '.' + v[2];
+    save('fw', state.fw);
+  }
+
+  async function readClock() {
+    if (!chars.clock) return;
+    state.clockRead = Array.from((await readBytes(chars.clock)).slice(0, 3));
+  }
+
+  // 예약은 기기 시계로 동작하므로 연결할 때마다 휴대폰 시각으로 맞춘다. [요일(월=0)][시][분]
+  async function syncClock() {
+    if (!chars.clock) return;
+    const now = new Date();
+    try {
+      await writeBytes(chars.clock, [(now.getDay() + 6) % 7, now.getHours(), now.getMinutes()]);
+    } catch (e) { /* 실제로는 써졌을 수 있어 아래에서 읽어 확인 */ }
+    await readClock();
+    const c = state.clockRead;
+    if (c && c[1] === now.getHours() && Math.abs(c[2] - now.getMinutes()) <= 1) {
+      state.clockSyncedAt = Date.now();
+      save('clockSyncedAt', String(state.clockSyncedAt));
+    }
+  }
+
+  // 50바이트 = 10칸 × [요일+사용][시][분][대상][동작], 빈 칸은 FF×5
+  async function readTimers() {
+    if (!chars.timers) return;
+    const b = await readBytes(chars.timers);
+    const list = [];
+    for (let id = 0; id < 10 && id * 5 + 4 < b.length; id++) {
+      const s = b.slice(id * 5, id * 5 + 5);
+      if (s.every((x) => x === 0xff)) continue;
+      list.push({
+        id,
+        days: [7, 6, 5, 4, 3, 2, 1].map((bit) => !!((s[0] >> bit) & 1)),
+        enable: !!(s[0] & 1),
+        hour: s[1],
+        min: s[2],
+        target: s[3],
+        action: s[4],
+      });
+    }
+    state.timers = list;
+    save('timers', JSON.stringify(list));
+  }
+
+  function daysByte(t) {
+    let v = t.enable ? 1 : 0;
+    t.days.forEach((on, i) => { if (on) v |= 1 << (7 - i); });
+    return v;
+  }
+  // 기기가 예약 변경을 알아보는 버전 값: 현재 [시][분][초], 마지막 예약을 지울 때는 FF FF FF
+  function timerVersion(lastOne) {
+    const n = new Date();
+    return lastOne ? [0xff, 0xff, 0xff] : [n.getHours(), n.getMinutes(), n.getSeconds()];
+  }
+  function sameTimer(a, b) {
+    return a && b && a.hour === b.hour && a.min === b.min && a.target === b.target
+      && a.action === b.action && a.enable === b.enable && a.days.every((d, i) => d === b.days[i]);
+  }
+
+  async function writeTimer(t) {
+    await ensureConnected();
+    if (!chars.timerOp) throw new Notice('예약 기능을 찾지 못했어요');
+    step = '예약 저장';
+    let writeErr = null;
+    try {
+      await writeBytes(chars.timerOp, [0x00, t.id, daysByte(t), t.hour, t.min, t.target, t.action, ...timerVersion(false)]);
+    } catch (e) { writeErr = e; }
+    await readTimers();
+    if (!sameTimer(state.timers.find((x) => x.id === t.id), t)) throw writeErr || new Notice('기기에 저장되지 않았어요');
+  }
+
+  async function deleteTimer(id) {
+    await ensureConnected();
+    if (!chars.timerOp) throw new Notice('예약 기능을 찾지 못했어요');
+    step = '예약 삭제';
+    const lastOne = (state.timers || []).length <= 1;
+    let writeErr = null;
+    try {
+      await writeBytes(chars.timerOp, [0x01, id, 0, 0, 0, 0, 0, ...timerVersion(lastOne)]);
+    } catch (e) { writeErr = e; }
+    await readTimers();
+    if (state.timers.some((x) => x.id === id)) throw writeErr || new Notice('삭제되지 않았어요');
+  }
+
+  async function readStroke() {
+    if (!chars.stroke) return;
+    const b = (await readBytes(chars.stroke))[0];
+    state.stroke = b <= 2 ? b : b >> 4;
+  }
+
+  // 1바이트 = [단계(상위 4비트)][모드(하위 4비트): 1=시험 동작, 0=저장]
+  async function writeStroke(level, test) {
+    await ensureConnected();
+    if (!chars.stroke) throw new Notice('손가락 길이 기능을 찾지 못했어요');
+    step = test ? '눌러보기' : '저장';
+    let writeErr = null;
+    try {
+      await writeBytes(chars.stroke, [(level << 4) | (test ? 1 : 0)]);
+    } catch (e) { writeErr = e; }
+    if (test) {
+      toast(writeErr ? '눌러보기 명령을 보냈어요 (응답 확인은 못 했어요)' : '눌러봤어요 (' + STROKE_NAMES[level] + ')', 'ok');
       return;
     }
-    if (ch.writeValueWithResponse) await ch.writeValueWithResponse(data);
-    else await ch.writeValue(data);
+    await readStroke();
+    if (state.stroke !== level) throw writeErr || new Notice('저장되지 않았어요');
+    strokeChoice = null;
+    toast('손가락 길이를 저장했어요 (' + STROKE_NAMES[level] + ')', 'ok');
   }
+
+  // 사용자에게 문구만 보여줄 안내 (블루투스 오류와 구분)
+  class Notice extends Error {}
 
   function errText(e) {
     if (e === null || e === undefined) return '알 수 없는 오류';
@@ -440,7 +944,8 @@
     try {
       await fn();
     } catch (e) {
-      if (e && e.name === 'NotFoundError') toast('기기 선택이 취소되었습니다.');
+      if (e && e.name === 'NotFoundError' && step === '') toast('기기 선택이 취소되었습니다.');
+      else if (e instanceof Notice) toast(e.message, 'err');
       else toast('실패' + (step ? ' (' + step + ' 단계)' : '') + ': ' + errText(e), 'err');
     } finally {
       busy = false;
@@ -450,7 +955,7 @@
 
   async function connect(acceptAll) {
     await pickDevice(acceptAll);
-    await ensureCharacteristic();
+    await ensureConnected();
     toast('연결됨', 'ok');
   }
 
@@ -461,13 +966,15 @@
     // 안드로이드 앱처럼 최대 3번 재시도
     for (let i = 0; i < 3; i++) {
       try {
-        await writeByte(KEYS[sw][sent]);
+        await ensureConnected();
+        step = '쓰기';
+        await writeBytes(chars.sw, [KEYS[sw][sent]]);
         save('last' + sw, act);
         toast('스위치 ' + sw + ' ' + act.toUpperCase() + ' 완료', 'ok');
         return;
       } catch (e) {
         lastErr = e;
-        characteristic = null;
+        chars = {};
         await new Promise((r) => setTimeout(r, 500));
       }
     }
@@ -489,6 +996,7 @@
     } catch (e) { /* 지원 안 하면 무시 */ }
   }
 
+  // ── 기기 정보: 원시 데이터 ──
   function shortUuid(u) {
     const m = /^0000([0-9a-f]{4})-0000-1000-8000-00805f9b34fb$/i.exec(u);
     return m ? m[1] : u;
@@ -497,18 +1005,15 @@
     return Array.from(new Uint8Array(v.buffer, v.byteOffset, v.byteLength))
       .map((b) => b.toString(16).padStart(2, '0')).join(' ') || '(비어 있음)';
   }
-
-  // 기기가 가진 서비스/캐릭터리스틱과 읽을 수 있는 값을 전부 나열한다 (배터리 위치를 찾기 위함)
   async function inspect() {
-    if (!device) await pickDevice(false);
-    await ensureCharacteristic();
-    const out = ['기기: ' + (device.name || '-'), '배터리(표준): ' + (battery === null ? '없음' : battery + '%')];
+    await ensureConnected();
+    const out = ['기기: ' + (device.name || '-')];
     const services = await device.gatt.getPrimaryServices();
     for (const svc of services) {
       out.push('', '서비스 ' + shortUuid(svc.uuid));
-      let chars = [];
-      try { chars = await svc.getCharacteristics(); } catch (e) { out.push('  목록 실패: ' + errText(e)); }
-      for (const c of chars) {
+      let list = [];
+      try { list = await svc.getCharacteristics(); } catch (e) { out.push('  목록 실패: ' + errText(e)); }
+      for (const c of list) {
         const p = c.properties || {};
         const flags = ['read', 'write', 'writeWithoutResponse', 'notify', 'indicate'].filter((k) => p[k]).join(',');
         let val = '';
@@ -518,58 +1023,157 @@
         out.push('  ' + shortUuid(c.uuid) + ' [' + flags + ']' + val);
       }
     }
-    // 배터리를 광고 신호에 실어 보내는 기기도 있어서 5초간 들어본다 (지원하는 브라우저만)
-    out.push('');
-    if (!device.watchAdvertisements) {
-      out.push('광고 데이터: 이 브라우저는 지원 안 함');
-    } else {
-      try {
-        const ad = await new Promise((resolve, reject) => {
-          const timer = setTimeout(() => reject(new Error('5초 동안 수신 없음')), 5000);
-          device.addEventListener('advertisementreceived', (ev) => { clearTimeout(timer); resolve(ev); }, { once: true });
-          device.watchAdvertisements().catch((e) => { clearTimeout(timer); reject(e); });
-        });
-        out.push('광고 데이터:');
-        if (ad.manufacturerData) ad.manufacturerData.forEach((v, id) => out.push('  제조사 ' + id.toString(16) + ' = ' + hex(v)));
-        if (ad.serviceData) ad.serviceData.forEach((v, id) => out.push('  서비스 ' + shortUuid(id) + ' = ' + hex(v)));
-      } catch (e) {
-        out.push('광고 데이터: ' + errText(e));
-      }
-    }
     $('diag').textContent = out.join('\n');
     $('diag').classList.add('show');
   }
 
-  function openSheet(open) {
-    document.body.classList.toggle('sheet-open', open);
-    if (open) $('nameInput').value = load('displayName') || '';
+  // ── 시트 ──
+  function openPanel(name) {
+    document.body.classList.toggle('sheet-open', !!name);
+    document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('show', p.dataset.panel === name));
+    if (name === 'settings') $('nameInput').value = load('displayName') || '';
+    if (name !== 'info') $('diag').classList.remove('show');
+    $('sheet').scrollTop = 0;
   }
+
+  function startEdit(t) {
+    editing = t
+      ? { ...t, days: t.days.slice(), action: uiAction(t.action) }
+      : { id: null, days: [true, true, true, true, true, false, false], enable: true, hour: 7, min: 0, target: 0, action: 0 };
+    $('editTitle').textContent = t ? '예약 수정' : '예약 추가';
+    $('tTime').value = pad(editing.hour) + ':' + pad(editing.min);
+    $('tDelete').hidden = !t;
+    renderEdit();
+    openPanel('timerEdit');
+  }
+  function renderEdit() {
+    document.querySelectorAll('#dayChips .chip').forEach((c, i) => c.classList.toggle('on', editing.days[i]));
+    document.querySelectorAll('.seg').forEach((seg) => {
+      seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', Number(b.dataset.v) === editing[seg.dataset.k]));
+    });
+  }
+
+  async function saveEdit() {
+    const [h, m] = ($('tTime').value || '').split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) throw new Notice('시각을 입력해 주세요');
+    if (!editing.days.some(Boolean)) throw new Notice('요일을 하나 이상 골라주세요');
+    const t = { ...editing, hour: h, min: m, action: rawAction(editing.action) };
+    await ensureConnected();
+    const others = (state.timers || []).filter((x) => x.id !== t.id);
+    if (others.some((x) => x.enable && x.hour === t.hour && x.min === t.min && x.target === t.target && x.days.some((d, i) => d && t.days[i]))) {
+      throw new Notice('같은 시각에 같은 스위치 예약이 이미 있어요');
+    }
+    if (t.id === null) {
+      const used = new Set((state.timers || []).map((x) => x.id));
+      t.id = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find((i) => !used.has(i));
+      if (t.id === undefined) throw new Notice('예약은 최대 10개까지 넣을 수 있어요');
+    }
+    await writeTimer(t);
+    toast('예약을 저장했어요', 'ok');
+    openPanel('timers');
+  }
+
+  // ── 이벤트 ──
+  DAY_NAMES.forEach((name, i) => {
+    const c = document.createElement('button');
+    c.className = 'chip';
+    c.textContent = name;
+    c.addEventListener('click', () => { editing.days[i] = !editing.days[i]; renderEdit(); });
+    $('dayChips').append(c);
+  });
+  document.querySelectorAll('.quick').forEach((q) => q.addEventListener('click', () => {
+    editing.days = DAY_NAMES.map((_, i) => q.dataset.q === 'all' || (q.dataset.q === 'weekday' ? i < 5 : i >= 5));
+    renderEdit();
+  }));
+  document.querySelectorAll('.seg').forEach((seg) => seg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+    editing[seg.dataset.k] = Number(b.dataset.v);
+    renderEdit();
+  })));
+  document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openPanel(b.dataset.open)));
+  document.querySelectorAll('.stroke-opt').forEach((b) => b.addEventListener('click', () => {
+    strokeChoice = Number(b.dataset.level);
+    renderStroke();
+  }));
 
   $('invert').checked = load('invert') === '1';
   $('invert').addEventListener('change', () => { save('invert', $('invert').checked ? '1' : '0'); render(); });
-  $('navInvert').addEventListener('click', () => {
-    $('invert').checked = !$('invert').checked;
-    save('invert', $('invert').checked ? '1' : '0');
-    toast($('invert').checked ? 'ON/OFF 반전 켜짐' : 'ON/OFF 반전 꺼짐');
-    render();
-  });
   $('nameInput').addEventListener('input', () => { save('displayName', $('nameInput').value.trim()); render(); });
-  $('menuBtn').addEventListener('click', () => openSheet(true));
-  $('navSettings').addEventListener('click', () => openSheet(true));
-  $('sheetBg').addEventListener('click', () => openSheet(false));
+  $('menuBtn').addEventListener('click', () => openPanel('settings'));
+  $('navSettings').addEventListener('click', () => openPanel('settings'));
+  $('sheetBg').addEventListener('click', () => openPanel(null));
+  setInterval(() => { if (!busy) render(); }, 30000);
 
   if (!navigator.bluetooth) {
     $('nobt').classList.add('show');
+    $('navTimers').addEventListener('click', () => openPanel('timers'));
+    $('navStroke').addEventListener('click', () => openPanel('stroke'));
+    $('infoBtn').addEventListener('click', () => openPanel('info'));
     render();
-    document.querySelectorAll('main button, #navConnect, #badge, #phoneBtn, #pickOther, #scanAll, #inspectBtn').forEach((b) => { b.disabled = true; });
+    document.querySelectorAll('main button, #badge, #pickOther, #scanAll, #addTimer, #infoRefresh, #inspectBtn, #strokeTest, #strokeSave').forEach((b) => { b.disabled = true; });
   } else {
     const connectTap = () => run(() => connect(false));
-    $('navConnect').addEventListener('click', connectTap);
     $('badge').addEventListener('click', connectTap);
-    $('phoneBtn').addEventListener('click', connectTap);
-    $('pickOther').addEventListener('click', () => { openSheet(false); run(() => connect(false)); });
-    $('scanAll').addEventListener('click', () => { openSheet(false); run(() => connect(true)); });
+    $('bannerBtn').addEventListener('click', connectTap);
+    $('pickOther').addEventListener('click', () => { openPanel(null); run(() => connect(false)); });
+    $('scanAll').addEventListener('click', () => { openPanel(null); run(() => connect(true)); });
+    $('infoBtn').addEventListener('click', () => {
+      openPanel('info');
+      run(async () => {
+        await ensureConnected();
+        await quietly(readBattery);
+        await quietly(readAuthority);
+        await quietly(readFirmware);
+        await quietly(readClock);
+      });
+    });
+    $('infoRefresh').addEventListener('click', () => run(async () => {
+      await ensureConnected();
+      await readBattery();
+      await quietly(readAuthority);
+      await quietly(readFirmware);
+      await quietly(readClock);
+      toast('기기 정보를 새로 읽었어요', 'ok');
+    }));
     $('inspectBtn').addEventListener('click', () => run(inspect));
+    $('navTimers').addEventListener('click', () => {
+      openPanel('timers');
+      run(async () => { await ensureConnected(); await readTimers(); });
+    });
+    $('addTimer').addEventListener('click', () => startEdit(null));
+    $('timerList').addEventListener('click', (ev) => {
+      const edit = ev.target.closest('[data-edit]');
+      if (edit) startEdit(state.timers.find((x) => x.id === Number(edit.dataset.edit)));
+    });
+    $('timerList').addEventListener('change', (ev) => {
+      const id = ev.target.dataset.toggle;
+      if (id === undefined) return;
+      const t = state.timers.find((x) => x.id === Number(id));
+      run(async () => {
+        await writeTimer({ ...t, enable: ev.target.checked });
+        toast(ev.target.checked ? '예약을 켰어요' : '예약을 껐어요', 'ok');
+      });
+    });
+    $('tSave').addEventListener('click', () => run(saveEdit));
+    $('tDelete').addEventListener('click', () => run(async () => {
+      await deleteTimer(editing.id);
+      toast('예약을 삭제했어요', 'ok');
+      openPanel('timers');
+    }));
+    $('navStroke').addEventListener('click', () => {
+      strokeChoice = null;
+      openPanel('stroke');
+      run(async () => { await ensureConnected(); await readStroke(); });
+    });
+    $('strokeTest').addEventListener('click', () => {
+      const level = strokeChoice !== null ? strokeChoice : state.stroke;
+      if (level === null) return toast('길이를 먼저 골라주세요');
+      run(() => writeStroke(level, true));
+    });
+    $('strokeSave').addEventListener('click', () => {
+      const level = strokeChoice !== null ? strokeChoice : state.stroke;
+      if (level === null) return toast('길이를 먼저 골라주세요');
+      run(() => writeStroke(level, false));
+    });
     document.querySelectorAll('.pill').forEach((p) => {
       p.querySelectorAll('.side').forEach((b) => {
         b.addEventListener('click', () => run(() => toggle(Number(p.dataset.sw), b.dataset.act)));
