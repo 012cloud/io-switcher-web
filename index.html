@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I/O 스위처</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="I/O 스위처">
+<meta name="theme-color" content="#5b3fa8">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<style>
+  :root {
+    --bg: #f4f2f8;
+    --card: #ffffff;
+    --text: #1d1a24;
+    --muted: #6b6578;
+    --line: #e3dfeb;
+    --accent: #5b3fa8;
+    --on: #2e9d5b;
+    --off: #5d5a66;
+    --err: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141218;
+      --card: #1f1c25;
+      --text: #ece8f4;
+      --muted: #a39cb2;
+      --line: #322d3b;
+      --accent: #a58cf0;
+      --on: #3fbf74;
+      --off: #8a8596;
+      --err: #ff6b5b;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  }
+  main { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 8px 0 16px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--off); flex: none; }
+  .dot.ok { background: var(--on); }
+  .dot.busy { background: var(--accent); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  #devName { font-weight: 600; }
+  #status { color: var(--muted); font-size: 14px; margin-top: 8px; min-height: 1.4em; word-break: break-all; }
+  #status.err { color: var(--err); }
+  button {
+    font: inherit;
+    border: 0;
+    border-radius: 12px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  button:disabled { opacity: .45; }
+  .connect {
+    width: 100%;
+    padding: 14px;
+    margin-top: 12px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .sw-title { font-weight: 600; margin-bottom: 12px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pair button {
+    padding: 22px 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .btn-on { background: var(--on); }
+  .btn-off { background: var(--off); }
+  .opts label { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+  .opts input { width: 20px; height: 20px; }
+  .link {
+    background: none;
+    color: var(--muted);
+    text-decoration: underline;
+    padding: 6px 0;
+    font-size: 14px;
+  }
+  #nobt { display: none; }
+  #nobt.show { display: block; }
+  #nobt p { margin: 0 0 8px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<main>
+  <h1>I/O 스위처</h1>
+
+  <div class="card" id="nobt">
+    <p><strong>이 브라우저는 블루투스를 지원하지 않습니다.</strong></p>
+    <p>아이폰에서는 App Store의 <strong>Bluefy</strong> 앱을 설치하고, Bluefy에서 이 주소를 열어주세요.</p>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span class="dot" id="dot"></span>
+      <span id="devName">연결 안 됨</span>
+    </div>
+    <div id="status"></div>
+    <button class="connect" id="connectBtn">기기 연결</button>
+  </div>
+
+  <div class="card">
+    <div class="sw-title">스위치 1</div>
+    <div class="pair">
+      <button class="btn-on sw" data-sw="1" data-act="on">ON</button>
+      <button class="btn-off sw" data-sw="1" data-act="off">OFF</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sw-title">스위치 2</div>
+    <div class="pair">
+      <button class="btn-on sw" data-sw="2" data-act="on">ON</button>
+      <button class="btn-off sw" data-sw="2" data-act="off">OFF</button>
+    </div>
+  </div>
+
+  <div class="card opts">
+    <label>ON/OFF 반전 <input type="checkbox" id="invert"></label>
+    <button class="link" id="scanAll">기기가 안 보이면: 주변 모든 기기 보기</button>
+  </div>
+</main>
+
+<script>
+  // 안드로이드 앱(lib/main.dart)과 같은 값
+  const SERVICE_UUID = '0000150b-0000-1000-8000-00805f9b34fb';
+  const CHAR_UUID = '000015ba-0000-1000-8000-00805f9b34fb';
+  const KEYS = {
+    1: { on: 0x00, off: 0x01 },
+    2: { on: 0x05, off: 0x03 },
+  };
+
+  const $ = (id) => document.getElementById(id);
+  let device = null;
+  let characteristic = null;
+  let busy = false;
+
+  function load(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) { /* 저장 못 해도 동작에는 지장 없음 */ }
+  }
+
+  function setStatus(msg, isErr) {
+    $('status').textContent = msg;
+    $('status').classList.toggle('err', !!isErr);
+  }
+
+  function setState(state) {
+    $('dot').className = 'dot' + (state === 'ok' ? ' ok' : state === 'busy' ? ' busy' : '');
+    $('devName').textContent = device ? (device.name || '이름 없는 기기') : '연결 안 됨';
+    $('connectBtn').textContent = device ? '다른 기기 선택' : '기기 연결';
+    document.querySelectorAll('button').forEach((b) => { b.disabled = busy; });
+  }
+
+  function watchDisconnect(d) {
+    d.addEventListener('gattserverdisconnected', () => {
+      characteristic = null;
+      if (!busy) { setState(); setStatus('연결 끊김 (버튼을 누르면 다시 연결합니다)'); }
+    });
+  }
+
+  async function pickDevice(acceptAll) {
+    const opts = acceptAll
+      ? { acceptAllDevices: true, optionalServices: [SERVICE_UUID] }
+      : { filters: [{ namePrefix: 'SWITCHER_M' }], optionalServices: [SERVICE_UUID] };
+    device = await navigator.bluetooth.requestDevice(opts);
+    characteristic = null;
+    watchDisconnect(device);
+    save('lastName', device.name || '');
+  }
+
+  async function ensureCharacteristic() {
+    if (characteristic && device.gatt.connected) return characteristic;
+    setStatus('연결 중…');
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    characteristic = await service.getCharacteristic(CHAR_UUID);
+    return characteristic;
+  }
+
+  async function writeByte(byte) {
+    const data = new Uint8Array([byte]);
+    const ch = await ensureCharacteristic();
+    try {
+      if (ch.writeValueWithResponse) await ch.writeValueWithResponse(data);
+      else await ch.writeValue(data);
+    } catch (e) {
+      if (ch.writeValueWithoutResponse) await ch.writeValueWithoutResponse(data);
+      else throw e;
+    }
+  }
+
+  async function run(fn) {
+    if (busy) return;
+    busy = true;
+    setState('busy');
+    try {
+      await fn();
+    } catch (e) {
+      if (e && e.name === 'NotFoundError') setStatus('기기 선택이 취소되었습니다.');
+      else setStatus('실패: ' + (e && e.message ? e.message : e), true);
+    } finally {
+      busy = false;
+      setState(device && device.gatt.connected ? 'ok' : '');
+    }
+  }
+
+  async function toggle(sw, act) {
+    if (!device) await pickDevice(false);
+    const sent = $('invert').checked ? (act === 'on' ? 'off' : 'on') : act;
+    let lastErr;
+    // 안드로이드 앱처럼 최대 3번 재시도
+    for (let i = 0; i < 3; i++) {
+      try {
+        await writeByte(KEYS[sw][sent]);
+        setStatus('스위치 ' + sw + ' ' + act.toUpperCase() + ' 완료');
+        return;
+      } catch (e) {
+        lastErr = e;
+        characteristic = null;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    }
+    throw lastErr;
+  }
+
+  // 예전에 허용한 기기를 선택창 없이 다시 씀 (getDevices를 지원하는 브라우저만)
+  async function restoreDevice() {
+    if (!navigator.bluetooth.getDevices) return;
+    try {
+      const list = await navigator.bluetooth.getDevices();
+      const lastName = load('lastName');
+      const found = list.find((d) => d.name && d.name === lastName) || list[0];
+      if (found) {
+        device = found;
+        watchDisconnect(device);
+        setStatus('이전 기기 기억됨 — 버튼을 누르면 연결합니다');
+        setState();
+      }
+    } catch (e) { /* 지원 안 하면 무시 */ }
+  }
+
+  $('invert').checked = load('invert') === '1';
+  $('invert').addEventListener('change', () => save('invert', $('invert').checked ? '1' : '0'));
+
+  if (!navigator.bluetooth) {
+    $('nobt').classList.add('show');
+    document.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+  } else {
+    $('connectBtn').addEventListener('click', () => run(async () => {
+      await pickDevice(false);
+      await ensureCharacteristic();
+      setStatus('연결됨');
+    }));
+    $('scanAll').addEventListener('click', () => run(async () => {
+      await pickDevice(true);
+      await ensureCharacteristic();
+      setStatus('연결됨');
+    }));
+    document.querySelectorAll('.sw').forEach((b) => {
+      b.addEventListener('click', () => run(() => toggle(Number(b.dataset.sw), b.dataset.act)));
+    });
+    restoreDevice();
+  }
+</script>
+</body>
+</html>

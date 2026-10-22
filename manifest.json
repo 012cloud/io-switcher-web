@@ -1,0 +1,9 @@
+{
+  "name": "I/O 스위처",
+  "short_name": "I/O 스위처",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f2f8",
+  "theme_color": "#5b3fa8",
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
+}
