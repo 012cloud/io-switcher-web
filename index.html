@@ -499,6 +499,15 @@
 </div>
 
 <script>
+  // 아래 본 스크립트가 아예 실행되지 못할 때(문법 오류, 이름 충돌 등)도 원인을 화면에 보여준다
+  window.addEventListener('error', function (ev) {
+    var t = document.getElementById('toast');
+    if (t) { t.textContent = '페이지 오류: ' + ev.message; t.className = 'err'; }
+  });
+</script>
+<script>
+// Bluefy가 페이지에 넣는 전역 이름과 겹치지 않도록 전체를 함수 안에 둔다
+(() => {
   // ── 기기 규칙 (docs/ble-protocol.md 참고) ──
   const U = (x) => '0000' + x + '-0000-1000-8000-00805f9b34fb';
   const UUID = {
@@ -520,7 +529,7 @@
   const AUTH_NAMES = { 0: '잠금 해제', 1: '잠김', 2: '공유 코드 불일치' };
 
   const $ = (id) => document.getElementById(id);
-  const APP_VERSION = '2026-10-23a';
+  const APP_VERSION = '2026-10-23b';
 
   // Bluefy는 권한 없는 서비스 등에 응답 없이 멈추는 경우가 있어, 모든 블루투스 작업에 제한 시간을 둔다
   function limit(promise, ms) {
@@ -538,7 +547,6 @@
   }
 
   // 예상 못 한 오류도 화면에 보이게 (원인 파악용)
-  window.addEventListener('error', (ev) => toast('페이지 오류: ' + ev.message, 'err'));
   window.addEventListener('unhandledrejection', (ev) => toast('페이지 오류: ' + errText(ev.reason), 'err'));
   const pad = (n) => String(n).padStart(2, '0');
 
@@ -1006,19 +1014,33 @@
     throw lastErr;
   }
 
-  // 예전에 허용한 기기를 선택창 없이 다시 씀 (getDevices를 지원하는 브라우저만)
-  async function restoreDevice() {
-    if (!navigator.bluetooth.getDevices) return;
+  // 페이지를 열자마자 연결한다.
+  // 1) 브라우저가 예전에 허용한 기기를 기억하면(getDevices) 선택창 없이 바로 연결
+  // 2) 기억하지 못하면 바로 기기 선택창을 띄운다. 브라우저가 탭 없이 띄우는 걸 막으면 안내만 한다.
+  async function autoConnect() {
+    if (navigator.bluetooth.getDevices) {
+      try {
+        const list = await limit(navigator.bluetooth.getDevices(), 3000);
+        const lastName = load('lastName');
+        const found = list.find((d) => d.name && d.name === lastName) || list[0];
+        if (found) {
+          device = found;
+          watchDisconnect(device);
+          await ensureConnected();
+          toast('연결됨', 'ok');
+          return;
+        }
+      } catch (e) { /* 기억된 기기로 연결 실패 → 선택창으로 */ }
+    }
     try {
-      const list = await navigator.bluetooth.getDevices();
-      const lastName = load('lastName');
-      const found = list.find((d) => d.name && d.name === lastName) || list[0];
-      if (found) {
-        device = found;
-        watchDisconnect(device);
-        render();
+      await connect(false);
+    } catch (e) {
+      if (e && e.name === 'SecurityError') {
+        toast('기기 아이콘이나 스위치를 누르면 연결합니다');
+        return;
       }
-    } catch (e) { /* 지원 안 하면 무시 */ }
+      throw e;
+    }
   }
 
   // ── 기기 정보: 원시 데이터 ──
@@ -1206,8 +1228,9 @@
       });
     });
     render();
-    restoreDevice();
+    run(autoConnect);
   }
+})();
 </script>
 </body>
 </html>
