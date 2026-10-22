@@ -156,6 +156,7 @@
     padding: 8px 20px max(24px, env(safe-area-inset-bottom));
     transform: translateY(100%); transition: transform .25s;
     max-width: 520px; margin: 0 auto;
+    max-height: 85vh; overflow-y: auto;
   }
   body.sheet-open .sheet-bg { opacity: 1; pointer-events: auto; }
   body.sheet-open .sheet { transform: none; }
@@ -169,6 +170,12 @@
   .field input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--grad-a); }
   .sheet .row-btn { width: 100%; text-align: left; padding: 14px 0; border-bottom: 1px solid #eef0f6; }
   .sheet .hint { font-size: 13px; color: var(--ink-soft); line-height: 1.5; margin: 14px 0 0; }
+  #diag {
+    display: none; margin: 12px 0 0; padding: 12px; border-radius: 10px;
+    background: #f4f5fa; font: 12px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-all;
+    -webkit-user-select: text; user-select: text;
+  }
+  #diag.show { display: block; }
 
   #nobt {
     display: none;
@@ -294,15 +301,19 @@
   <label class="field">ON/OFF 반전 <input type="checkbox" id="invert"></label>
   <button class="row-btn" id="pickOther">다른 기기 선택</button>
   <button class="row-btn" id="scanAll">기기가 안 보이면: 주변 모든 기기 보기</button>
+  <button class="row-btn" id="inspectBtn">기기 정보 보기 (배터리 위치 찾기)</button>
   <p class="hint">반전은 스위처를 거꾸로 붙여서 ON/OFF가 반대로 동작할 때 켜세요.<br>
     지금 연결된 기기: <span id="sheetDev">없음</span><br>
     쓰기 방식: <span id="sheetMode">-</span></p>
+  <pre id="diag"></pre>
 </div>
 
 <script>
   // 안드로이드 앱(lib/main.dart)과 같은 값
   const SERVICE_UUID = '0000150b-0000-1000-8000-00805f9b34fb';
   const CHAR_UUID = '000015ba-0000-1000-8000-00805f9b34fb';
+  // 표준 배터리/기기 정보 서비스. 선택창에서 기기를 고를 때 접근 권한을 같이 받아야 읽을 수 있다.
+  const OPTIONAL_SERVICES = [SERVICE_UUID, 'battery_service', 'device_information'];
   const KEYS = {
     1: { on: 0x00, off: 0x01 },
     2: { on: 0x05, off: 0x03 },
@@ -325,14 +336,21 @@
     $('toast').className = kind || '';
   }
 
+  // 마지막으로 읽은 배터리 잔량. 저장소가 막힌 환경에서도 이번 세션 동안은 보이도록 메모리에 둔다.
+  let battery = load('battery');
+
+  function batteryText() {
+    return battery === null ? '' : ' · 배터리 ' + battery + '%';
+  }
+
   function render(state) {
     const connected = !!(device && device.gatt.connected);
     $('badge').classList.toggle('busy', state === 'busy');
     $('devName').textContent = load('displayName') || '내 스위처';
     $('devSub').textContent =
       state === 'busy' ? '연결 중…'
-      : connected ? '연결됨'
-      : device ? '대기 중 · 버튼을 누르면 연결'
+      : connected ? '연결됨' + batteryText()
+      : device ? '대기 중' + batteryText() + ' · 버튼을 누르면 연결'
       : '연결 안 됨 · 눌러서 연결';
     $('sheetDev').textContent = device ? (device.name || '이름 없는 기기') : '없음';
     $('sheetMode').textContent = !characteristic ? '-' : writeMode(characteristic) === 'noResponse' ? '응답 없음' : '응답 받음';
@@ -354,8 +372,8 @@
 
   async function pickDevice(acceptAll) {
     const opts = acceptAll
-      ? { acceptAllDevices: true, optionalServices: [SERVICE_UUID] }
-      : { filters: [{ namePrefix: 'SWITCHER_M' }], optionalServices: [SERVICE_UUID] };
+      ? { acceptAllDevices: true, optionalServices: OPTIONAL_SERVICES }
+      : { filters: [{ namePrefix: 'SWITCHER_M' }], optionalServices: OPTIONAL_SERVICES };
     device = await navigator.bluetooth.requestDevice(opts);
     characteristic = null;
     watchDisconnect(device);
@@ -372,7 +390,19 @@
     step = '서비스 찾기';
     const service = await server.getPrimaryService(SERVICE_UUID);
     characteristic = await service.getCharacteristic(CHAR_UUID);
+    await readBattery(server);
     return characteristic;
+  }
+
+  // 표준 배터리 서비스(0x180F)가 있으면 잔량(%)을 읽는다. 없거나 권한이 없으면 조용히 넘어감.
+  async function readBattery(server) {
+    try {
+      const svc = await server.getPrimaryService('battery_service');
+      const ch = await svc.getCharacteristic('battery_level');
+      const v = await ch.readValue();
+      battery = String(v.getUint8(0));
+      save('battery', battery);
+    } catch (e) { /* 배터리 정보 없음 */ }
   }
 
   function writeMode(ch) {
@@ -459,6 +489,57 @@
     } catch (e) { /* 지원 안 하면 무시 */ }
   }
 
+  function shortUuid(u) {
+    const m = /^0000([0-9a-f]{4})-0000-1000-8000-00805f9b34fb$/i.exec(u);
+    return m ? m[1] : u;
+  }
+  function hex(v) {
+    return Array.from(new Uint8Array(v.buffer, v.byteOffset, v.byteLength))
+      .map((b) => b.toString(16).padStart(2, '0')).join(' ') || '(비어 있음)';
+  }
+
+  // 기기가 가진 서비스/캐릭터리스틱과 읽을 수 있는 값을 전부 나열한다 (배터리 위치를 찾기 위함)
+  async function inspect() {
+    if (!device) await pickDevice(false);
+    await ensureCharacteristic();
+    const out = ['기기: ' + (device.name || '-'), '배터리(표준): ' + (battery === null ? '없음' : battery + '%')];
+    const services = await device.gatt.getPrimaryServices();
+    for (const svc of services) {
+      out.push('', '서비스 ' + shortUuid(svc.uuid));
+      let chars = [];
+      try { chars = await svc.getCharacteristics(); } catch (e) { out.push('  목록 실패: ' + errText(e)); }
+      for (const c of chars) {
+        const p = c.properties || {};
+        const flags = ['read', 'write', 'writeWithoutResponse', 'notify', 'indicate'].filter((k) => p[k]).join(',');
+        let val = '';
+        if (p.read) {
+          try { val = ' = ' + hex(await c.readValue()); } catch (e) { val = ' 읽기 실패: ' + errText(e); }
+        }
+        out.push('  ' + shortUuid(c.uuid) + ' [' + flags + ']' + val);
+      }
+    }
+    // 배터리를 광고 신호에 실어 보내는 기기도 있어서 5초간 들어본다 (지원하는 브라우저만)
+    out.push('');
+    if (!device.watchAdvertisements) {
+      out.push('광고 데이터: 이 브라우저는 지원 안 함');
+    } else {
+      try {
+        const ad = await new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error('5초 동안 수신 없음')), 5000);
+          device.addEventListener('advertisementreceived', (ev) => { clearTimeout(timer); resolve(ev); }, { once: true });
+          device.watchAdvertisements().catch((e) => { clearTimeout(timer); reject(e); });
+        });
+        out.push('광고 데이터:');
+        if (ad.manufacturerData) ad.manufacturerData.forEach((v, id) => out.push('  제조사 ' + id.toString(16) + ' = ' + hex(v)));
+        if (ad.serviceData) ad.serviceData.forEach((v, id) => out.push('  서비스 ' + shortUuid(id) + ' = ' + hex(v)));
+      } catch (e) {
+        out.push('광고 데이터: ' + errText(e));
+      }
+    }
+    $('diag').textContent = out.join('\n');
+    $('diag').classList.add('show');
+  }
+
   function openSheet(open) {
     document.body.classList.toggle('sheet-open', open);
     if (open) $('nameInput').value = load('displayName') || '';
@@ -480,7 +561,7 @@
   if (!navigator.bluetooth) {
     $('nobt').classList.add('show');
     render();
-    document.querySelectorAll('main button, #navConnect, #badge, #phoneBtn, #pickOther, #scanAll').forEach((b) => { b.disabled = true; });
+    document.querySelectorAll('main button, #navConnect, #badge, #phoneBtn, #pickOther, #scanAll, #inspectBtn').forEach((b) => { b.disabled = true; });
   } else {
     const connectTap = () => run(() => connect(false));
     $('navConnect').addEventListener('click', connectTap);
@@ -488,6 +569,7 @@
     $('phoneBtn').addEventListener('click', connectTap);
     $('pickOther').addEventListener('click', () => { openSheet(false); run(() => connect(false)); });
     $('scanAll').addEventListener('click', () => { openSheet(false); run(() => connect(true)); });
+    $('inspectBtn').addEventListener('click', () => run(inspect));
     document.querySelectorAll('.pill').forEach((p) => {
       p.querySelectorAll('.side').forEach((b) => {
         b.addEventListener('click', () => run(() => toggle(Number(p.dataset.sw), b.dataset.act)));
